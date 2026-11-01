@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spiele-Regie 🎛️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="spiele.css">
+<style>
+  header{
+    position:sticky; top:0; z-index:20;
+    background:rgba(13,13,18,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .head{
+    max-width:900px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 16px 6px;
+  }
+  .head h1{ margin:0; font-size:1.9rem; }
+  .status{ display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--muted); }
+  .dot{ width:9px; height:9px; border-radius:50%; background:#6b7280; flex:none; }
+  .dot.ok{ background:var(--green); } .dot.bad{ background:#ef4444; } .dot.wait{ background:#f59e0b; }
+  .onair{ font-size:0.8rem; color:var(--muted); padding:0 16px 8px; max-width:900px; margin:0 auto; }
+  .onair b{ color:var(--gold); }
+  nav{
+    max-width:900px; margin:0 auto;
+    display:flex; gap:6px; overflow-x:auto; padding:0 16px 12px;
+    scrollbar-width:none;
+  }
+  nav::-webkit-scrollbar{ display:none; }
+  nav button{
+    flex:none;
+    border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--muted);
+    padding:8px 12px; border-radius:999px; font:600 0.85rem 'Space Grotesk', sans-serif; cursor:pointer; white-space:nowrap;
+  }
+  nav button.active{ background:linear-gradient(100deg, var(--neon), #ff6f3d); color:#1a0510; border-color:transparent; }
+  nav button .badge{ background:var(--gold); color:#1a0510; border-radius:999px; padding:0 6px; margin-left:4px; font-size:0.72rem; }
+  main{ max-width:900px; margin:0 auto; padding:16px 16px 80px; }
+  section.tab{ display:none; }
+  section.tab.active{ display:block; }
+  section.tab > .card + .card{ margin-top:14px; }
+  h2{ font-family:'Bebas Neue', sans-serif; font-size:1.8rem; letter-spacing:0.02em; margin:0 0 4px; }
+  h3{ margin:0 0 8px; font-size:1rem; }
+  p.hint{ color:var(--muted); font-size:0.88rem; margin:0 0 12px; line-height:1.5; }
+  .live{
+    background:rgba(255,207,92,0.07);
+    border:1px solid rgba(255,207,92,0.3);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-top:12px;
+    font-size:0.92rem;
+    line-height:1.5;
+  }
+  .live:empty{ display:none; }
+  .live .big{ font-size:1.05rem; font-weight:700; }
+  .mono{ font-family:ui-monospace, Consolas, monospace; font-size:0.88rem; }
+  .list{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .item{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+  }
+  .item .grow{ flex:1; min-width:0; overflow-wrap:anywhere; }
+  .item img{ width:56px; height:56px; object-fit:cover; border-radius:8px; flex:none; }
+  .score{ font-weight:700; color:var(--gold); min-width:54px; text-align:right; }
+  .bars{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+  .bar{ position:relative; background:rgba(255,255,255,0.05); border-radius:8px; overflow:hidden; padding:7px 10px; font-size:0.88rem; }
+  .bar i{ position:absolute; inset:0 auto 0 0; background:rgba(255,61,122,0.35); }
+  .bar span{ position:relative; }
+  .bar.win i{ background:rgba(62,224,143,0.4); }
+  .links{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-top:12px; }
+  .photos{ display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px; margin-top:10px; }
+  .photo{ position:relative; border-radius:10px; overflow:hidden; background:var(--panel2); font-size:0.72rem; }
+  .photo img{ width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+  .photo div{ padding:5px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .photo button{ position:absolute; top:4px; right:4px; border:none; border-radius:6px; background:rgba(0,0,0,0.65); color:#fff; cursor:pointer; padding:2px 6px; }
+  .format{ font-size:0.82rem; color:var(--muted); background:rgba(255,255,255,0.03); border-radius:10px; padding:10px 12px; margin-top:10px; line-height:1.6; }
+  .format code{ color:var(--neon2); }
+  .check{ display:flex; align-items:center; gap:8px; font-size:0.92rem; margin-top:10px; cursor:pointer; }
+  .check input{ width:18px; height:18px; accent-color:var(--neon); }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:560px){ .two{ grid-template-columns:1fr; } }
+  .toast{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(20px);
+    background:var(--panel2); border:1px solid var(--line); padding:10px 16px; border-radius:12px;
+    opacity:0; pointer-events:none; transition:all .25s; z-index:50; max-width:90vw; text-align:center; font-size:0.9rem;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%); }
+</style>
+</head>
+<body>
+
+<div class="code-gate" id="codeGate">
+  <div class="code-card">
+    <h1 class="display gradient-text">Spiele-Regie</h1>
+    <p class="muted">Bitte Code eingeben</p>
+    <div class="code-digits">
+      <input type="text" inputmode="numeric" maxlength="1" class="code-digit">
+      <input type="text" inputmode="numeric" maxlength="1" class="code-digit">
+      <input type="text" inputmode="numeric" maxlength="1" class="code-digit">
+      <input type="text" inputmode="numeric" maxlength="1" class="code-digit">
+    </div>
+    <div class="code-error" id="codeError"></div>
+  </div>
+</div>
+
+<header>
+  <div class="head">
+    <h1 class="display gradient-text">Spiele-Regie</h1>
+    <div class="status"><span class="dot" id="connDot"></span><span id="connText">verbinde …</span></div>
+  </div>
+  <div class="onair">Beamer zeigt: <b id="onAir">–</b> · <span id="playerCount">0</span> Mitspieler</div>
+  <nav id="nav">
+    <button data-tab="start" class="active">🏠 Start</button>
+    <button data-tab="quiz">❓ Quiz</button>
+    <button data-tab="buzzer">🔔 Song-Buzzer</button>
+    <button data-tab="wish">🎶 Wessen Wunsch?</button>
+    <button data-tab="vote">🗳️ Abstimmung</button>
+    <button data-tab="wall">💌 Grüße<span class="badge hidden" id="pendingBadge"></span></button>
+    <button data-tab="wheel">🎡 Glücksrad</button>
+    <button data-tab="timer">⏱️ Timer</button>
+    <button data-tab="slide">📣 Ansage</button>
+    <button data-tab="scores">🏆 Rangliste</button>
+    <button data-tab="settings">⚙️ Einstellungen</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- START -->
+  <section class="tab active" data-tab="start">
+    <div class="card">
+      <h2>Los geht's</h2>
+      <p class="hint">Öffne den <b>Beamer</b> auf dem Laptop am Beamer und lass die Gäste den QR-Code scannen. Hier in der Regie wählst du dann oben ein Spiel aus.</p>
+      <button class="btn primary block" id="showLobby">📺 Startbild mit QR-Code auf den Beamer</button>
+      <div class="links">
+        <a class="btn" href="beamer.html" target="_blank">📺 Beamer öffnen</a>
+        <a class="btn" href="mitspielen.html" target="_blank">📱 Mitspielen (Gäste)</a>
+        <a class="btn" href="drucken.html" target="_blank">🖨️ Druckvorlagen</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Spiele-Übersicht</h3>
+      <p class="hint" style="margin:0;">
+        <b>Am Handy/Beamer:</b> Wer kennt Peti am besten? · Peti früher &amp; heute (Foto-Raten) · Song-Buzzer · Wessen Wunsch? · Hits aus dem Geburtsjahr · Jahrzehnte-Quiz · Was kostete das 1966? · Schätzglas · Live-Abstimmung &amp; Playback-Show · Glückwunsch-Wand · Glücksrad · 60-Sekunden-Challenges · Pantomime &amp; Montagsmaler<br>
+        <b>Zum Ausdrucken:</b> Peti-Bingo · 60 Gründe · Zeitkapsel · Schätzglas-Liste · Was ist im Sack? · Ja-Nein-Verbot · Begriffs- und Challenge-Karten
+      </p>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="tab" data-tab="quiz">
+    <div class="card">
+      <h2>Quiz</h2>
+      <p class="hint">Für „Wer kennt Peti am besten?“, Foto-Raten, Hits aus dem Geburtsjahr, Jahrzehnte-Quiz, „Was kostete das 1966?“ und das Schätzglas. Jeder Fragenkatalog lässt sich unten bearbeiten.</p>
+      <div class="row">
+        <select id="setSelect" class="grow"></select>
+        <button class="btn small" id="setNew">+ Neu</button>
+        <button class="btn small" id="setDelete">Löschen</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label class="muted" for="quizLimit" style="font-size:0.85rem;">Zeit pro Frage</label>
+        <select id="quizLimit" style="width:auto;">
+          <option value="0">ohne Limit</option>
+          <option value="15">15 Sekunden</option>
+          <option value="20" selected>20 Sekunden</option>
+          <option value="30">30 Sekunden</option>
+          <option value="45">45 Sekunden</option>
+        </select>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn primary grow" id="quizStart">▶ Quiz starten</button>
+        <button class="btn grow" id="quizReveal">✅ Auflösen</button>
+        <button class="btn grow" id="quizNext">⏭ Nächste Frage</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn small" id="quizPrev">⏮ Frage zurück</button>
+        <button class="btn small" id="quizEnd">🏆 Quiz beenden → Rangliste</button>
+      </div>
+      <div class="live" id="quizLive"></div>
+    </div>
+
+    <div class="card">
+      <h3>Fragen bearbeiten <span class="muted" id="setInfo" style="font-weight:400; font-size:0.85rem;"></span></h3>
+      <textarea id="setText" class="mono" style="min-height:320px;" spellcheck="false"></textarea>
+      <div class="format">
+        <code># Titel</code> Name des Quiz (erste Zeile)<br>
+        <code>? Frage</code> Frage mit Antworten darunter: <code>* richtig</code> und <code>- falsch</code> (2–4 Antworten)<br>
+        <code>~ Schätzfrage = 1975</code> Zahl schätzen, wer am nächsten dran ist, gewinnt (<code>= tage</code> rechnet Petis Alter in Tagen aus)<br>
+        <code>[foto: datei.jpg]</code> Foto zur Frage davor (Datei unten hochladen) · <code>//</code> Kommentar
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Fotos für Foto-Fragen</h3>
+      <p class="hint">Fotos hier hochladen und in den Fragen mit <code class="mono">[foto: dateiname.jpg]</code> verwenden. Vor dem Spiel einmal „An Beamer senden“ drücken, dann sind sie dort sofort da.</p>
+      <div class="row">
+        <input type="file" id="photoInput" accept="image/*" multiple class="grow">
+        <button class="btn" id="photoSend">📤 An Beamer senden</button>
+      </div>
+      <div class="muted" id="photoStatus" style="font-size:0.85rem; margin-top:8px;"></div>
+      <div class="photos" id="photoList"></div>
+    </div>
+  </section>
+
+  <!-- BUZZER -->
+  <section class="tab" data-tab="buzzer">
+    <div class="card">
+      <h2>Song-Buzzer</h2>
+      <p class="hint">Spiel einen Song kurz an (Spotify, Handy, Musikanlage) und gib den Buzzer frei. Wer zuerst drückt, darf raten. „Lösung von Spotify“ liest den laufenden Song aus, wenn Spotify auf diesem Gerät über die Jetzt-läuft-Anzeige verbunden ist.</p>
+      <div class="row">
+        <label class="muted" for="buzzPoints" style="font-size:0.85rem;">Punkte</label>
+        <input type="number" id="buzzPoints" value="100" min="0" style="width:90px;">
+      </div>
+      <button class="btn primary block" id="buzzStart" style="margin-top:12px;">🔔 Neue Runde, Buzzer frei!</button>
+      <div class="two" style="margin-top:10px;">
+        <button class="btn good" id="buzzRight">✓ Richtig</button>
+        <button class="btn bad" id="buzzWrong">✗ Falsch, nächster</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn grow" id="buzzSpotify">🎧 Lösung von Spotify</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input type="text" id="buzzManual" class="grow" placeholder="oder Lösung eintippen, z. B. Dancing Queen – ABBA">
+        <button class="btn" id="buzzManualBtn">Zeigen</button>
+      </div>
+      <div class="live" id="buzzLive"></div>
+    </div>
+  </section>
+
+  <!-- WESSEN WUNSCH -->
+  <section class="tab" data-tab="wish">
+    <div class="card">
+      <h2>Wessen Wunsch?</h2>
+      <p class="hint">Nimmt einen zufälligen Song aus der Wunschliste. Alle raten, wer ihn sich gewünscht hat. Wer ihn gewünscht hat, darf nicht mitraten. Am besten spielst du den Song gleichzeitig an.</p>
+      <div class="muted" id="wishInfo" style="font-size:0.88rem;">Wünsche werden geladen …</div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn primary grow" id="wishNext">🎲 Zufälligen Wunsch fragen</button>
+        <button class="btn grow" id="wishReveal">✅ Auflösen</button>
+      </div>
+      <div class="live" id="wishLive"></div>
+    </div>
+  </section>
+
+  <!-- ABSTIMMUNG -->
+  <section class="tab" data-tab="vote">
+    <div class="card">
+      <h2>Live-Abstimmung</h2>
+      <p class="hint">Alle stimmen per Handy ab, der Beamer zeigt das Ergebnis live. Auch für die Playback-Show.</p>
+      <label class="lbl" for="votePreset">Vorlage</label>
+      <select id="votePreset"></select>
+      <label class="lbl" for="voteQuestion">Frage</label>
+      <input type="text" id="voteQuestion" maxlength="140">
+      <label class="lbl" for="voteOptions">Antworten (eine pro Zeile, max. 12)</label>
+      <textarea id="voteOptions" style="min-height:130px;"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn small" id="voteGuests">👥 Gäste als Antworten</button>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn primary grow" id="voteStart">🗳️ Abstimmung starten</button>
+        <button class="btn grow" id="voteReveal">🏁 Ergebnis zeigen</button>
+      </div>
+      <div class="live" id="voteLive"></div>
+    </div>
+  </section>
+
+  <!-- GRÜSSE -->
+  <section class="tab" data-tab="wall">
+    <div class="card">
+      <h2>Glückwunsch-Wand</h2>
+      <p class="hint">Gäste schicken Grüße und Fotos vom Handy. Du gibst sie hier frei, dann laufen sie auf dem Beamer.</p>
+      <button class="btn primary block" id="wallShow">📺 Grüße-Wand auf den Beamer</button>
+      <label class="check"><input type="checkbox" id="autoApprove"> Grüße automatisch freigeben (ohne Kontrolle)</label>
+      <h3 style="margin-top:18px;">Warten auf Freigabe</h3>
+      <div class="list" id="pendingList"></div>
+      <h3 style="margin-top:18px;">Auf der Wand <span class="muted" id="wallCount" style="font-weight:400;"></span></h3>
+      <div class="row"><button class="btn small" id="wallResend">📤 Fotos erneut an Beamer senden</button></div>
+      <div class="list" id="wallList"></div>
+    </div>
+  </section>
+
+  <!-- GLÜCKSRAD -->
+  <section class="tab" data-tab="wheel">
+    <div class="card">
+      <h2>Glücksrad</h2>
+      <p class="hint">Das Rad entscheidet, wer als Nächstes dran ist oder welche Aufgabe kommt.</p>
+      <label class="lbl" for="wheelPreset">Vorlage</label>
+      <select id="wheelPreset">
+        <option value="tasks">Aufgaben für Gäste</option>
+        <option value="guests">Namen der Mitspieler</option>
+        <option value="custom">Eigene Liste</option>
+      </select>
+      <label class="lbl" for="wheelSegments">Felder (eins pro Zeile, 2–16)</label>
+      <textarea id="wheelSegments" style="min-height:160px;"></textarea>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn grow" id="wheelShow">📺 Rad zeigen</button>
+        <button class="btn primary grow" id="wheelSpin">🎡 Drehen!</button>
+      </div>
+      <div class="live" id="wheelLive"></div>
+    </div>
+  </section>
+
+  <!-- TIMER -->
+  <section class="tab" data-tab="timer">
+    <div class="card">
+      <h2>Timer, Challenges &amp; Pantomime</h2>
+      <p class="hint">Bei Pantomime und Montagsmaler sieht nur die ausgewählte Person den Begriff auf ihrem Handy.</p>
+      <label class="lbl" for="timerKind">Art</label>
+      <select id="timerKind">
+        <option value="challenge">⏱️ 60-Sekunden-Challenge</option>
+        <option value="pantomime">🎭 Pantomime</option>
+        <option value="drawing">✏️ Montagsmaler</option>
+        <option value="free">⏲️ Freier Timer</option>
+      </select>
+      <div id="timerPickWrap">
+        <label class="lbl" for="timerItem">Auswahl</label>
+        <div class="row">
+          <select id="timerItem" class="grow"></select>
+          <button class="btn small" id="timerRandom">🎲 Zufall</button>
+        </div>
+      </div>
+      <div id="timerPerformerWrap">
+        <label class="lbl" for="timerPerformer">Wer ist dran?</label>
+        <div class="row">
+          <select id="timerPerformer" class="grow"></select>
+          <button class="btn small" id="timerPerformerRandom">🎲 Zufall</button>
+        </div>
+      </div>
+      <div id="timerFreeWrap">
+        <label class="lbl" for="timerTitle">Titel</label>
+        <input type="text" id="timerTitle" maxlength="80" value="Countdown">
+      </div>
+      <label class="lbl" for="timerDuration">Sekunden</label>
+      <input type="number" id="timerDuration" value="60" min="5" max="900" style="width:120px;">
+      <div class="row" style="margin-top:12px;">
+        <button class="btn grow" id="timerShow">📺 Vorbereiten</button>
+        <button class="btn primary grow" id="timerStart">▶ Start</button>
+        <button class="btn grow" id="timerPause">⏸ Pause</button>
+        <button class="btn grow" id="timerReset">↺ Zurück</button>
+      </div>
+      <div class="live" id="timerLive"></div>
+      <details style="margin-top:14px;">
+        <summary class="muted" style="cursor:pointer;">Listen bearbeiten</summary>
+        <label class="lbl" for="listChallenge">Challenges (Titel | Beschreibung)</label>
+        <textarea id="listChallenge" style="min-height:160px;"></textarea>
+        <label class="lbl" for="listPantomime">Pantomime-Begriffe</label>
+        <textarea id="listPantomime"></textarea>
+        <label class="lbl" for="listDrawing">Montagsmaler-Begriffe</label>
+        <textarea id="listDrawing"></textarea>
+      </details>
+    </div>
+  </section>
+
+  <!-- ANSAGE -->
+  <section class="tab" data-tab="slide">
+    <div class="card">
+      <h2>Ansage auf dem Beamer</h2>
+      <p class="hint">Für die Spiele ohne Handy: Ja-Nein-Verbot, Bingo, 60 Gründe, Zeitkapsel, Schätzglas, „Was ist im Sack?“ und Playback-Show.</p>
+      <label class="lbl" for="slidePreset">Vorlage</label>
+      <select id="slidePreset"></select>
+      <div class="row">
+        <div style="width:90px;"><label class="lbl" for="slideEmoji">Emoji</label><input type="text" id="slideEmoji" maxlength="8"></div>
+        <div class="grow"><label class="lbl" for="slideTitle">Titel</label><input type="text" id="slideTitle" maxlength="80"></div>
+      </div>
+      <label class="lbl" for="slideText">Text</label>
+      <textarea id="slideText" style="min-height:110px;" maxlength="400"></textarea>
+      <button class="btn primary block" id="slideShow" style="margin-top:12px;">📺 Auf den Beamer</button>
+    </div>
+  </section>
+
+  <!-- RANGLISTE -->
+  <section class="tab" data-tab="scores">
+    <div class="card">
+      <h2>Rangliste</h2>
+      <p class="hint">Punkte aus Quiz, Buzzer und „Wessen Wunsch?“ werden automatisch gezählt. Für Bingo, Schätzglas, Playback &amp; Co. vergibst du sie hier von Hand.</p>
+      <button class="btn primary block" id="scoresShow">🏆 Rangliste auf den Beamer</button>
+      <div class="list" id="playerList"></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn small" id="scoresReset">Alle Punkte auf 0</button>
+        <button class="btn small" id="playersClear">Alle Mitspieler entfernen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EINSTELLUNGEN -->
+  <section class="tab" data-tab="settings">
+    <div class="card">
+      <h2>Einstellungen</h2>
+      <label class="lbl" for="setName">Name des Geburtstagskinds</label>
+      <input type="text" id="setName" maxlength="40">
+      <label class="lbl" for="setTitle">Titel der Party</label>
+      <input type="text" id="setTitle" maxlength="60">
+      <label class="lbl" for="setBirthday">Geburtstag (für „Alter in Tagen“ und die Zeitkapsel)</label>
+      <input type="date" id="setBirthday">
+      <button class="btn primary block" id="settingsSave" style="margin-top:14px;">Speichern</button>
+      <hr style="border:none; border-top:1px solid var(--line); margin:22px 0;">
+      <button class="btn small bad" id="resetAll">Spielstand komplett zurücksetzen</button>
+      <p class="hint" style="margin-top:8px;">Löscht Mitspieler, Punkte, Grüße und laufende Spiele. Fragenkataloge und Fotos bleiben.</p>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+<script src="../wunsch-sync.js"></script>
+<script src="spiele-core.js"></script>
+<script>
+(function(){
+  const Core = window.SpieleCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = Core.esc;
+  const ADMIN_CODE = '1234';
+
+  // ================= Vorlagen =================
+  const DEFAULT_SETS = [
+    { id: 'peti', text:
+`# Wer kennt Peti am besten?
+// Beispielfragen: bitte die Antworten durch die echten ersetzen!
+// Die richtige Antwort bekommt ein *, die falschen ein -
+
+? Was ist Petis Lieblingsessen?
+* Richtige Antwort hier eintragen
+- Falsche Antwort
+- Falsche Antwort
+- Falsche Antwort
+
+? Was wollte Peti als Kind werden?
+* Richtige Antwort hier eintragen
+- Falsche Antwort
+- Falsche Antwort
+- Falsche Antwort
+
+? Welches war Petis erstes Auto?
+* Richtige Antwort hier eintragen
+- Falsche Antwort
+- Falsche Antwort
+- Falsche Antwort
+
+? Wohin fährt Peti am liebsten in den Urlaub?
+* Richtige Antwort hier eintragen
+- Falsche Antwort
+- Falsche Antwort
+- Falsche Antwort
+
+? Was kann Peti überhaupt nicht leiden?
+* Richtige Antwort hier eintragen
+- Falsche Antwort
+- Falsche Antwort
+- Falsche Antwort
+
+~ Wie viele Tage ist Peti heute alt? = tage
+` },
+    { id: 'fotos', text:
+`# Peti früher und heute
+// 1. Fotos unten bei "Fotos für Foto-Fragen" hochladen
+// 2. Pro Foto eine Frage schreiben, zum Beispiel:
+//
+// ~ In welchem Jahr entstand dieses Foto? = 1975
+// [foto: peti-kindergarten.jpg]
+//
+// ? Wo wurde dieses Foto aufgenommen?
+// [foto: urlaub.jpg]
+// * Italien
+// - Spanien
+// - Österreich
+// - Dänemark
+` },
+    { id: 'hits1966', text:
+`# Hits aus Petis Geburtsjahr 1966
+
+? Welcher dieser Hits erschien 1966?
+* Paint It Black (Rolling Stones)
+- Satisfaction (Rolling Stones)
+- Hey Jude (Beatles)
+- Let It Be (Beatles)
+
+? Wer sang 1966 „Strangers in the Night“?
+* Frank Sinatra
+- Dean Martin
+- Elvis Presley
+- Tom Jones
+
+? Welche Band veröffentlichte 1966 „Good Vibrations“?
+* The Beach Boys
+- The Beatles
+- The Kinks
+- The Monkees
+
+? „Yellow Submarine“ (1966) ist von …
+* The Beatles
+- The Rolling Stones
+- The Who
+- The Byrds
+
+? Wer sang 1966 „These Boots Are Made for Walkin'“?
+* Nancy Sinatra
+- Cher
+- Dusty Springfield
+- Petula Clark
+
+? Wer hatte 1966 den Hit „Sunny“?
+* Bobby Hebb
+- Boney M.
+- Marvin Gaye
+- Stevie Wonder
+
+? „Monday, Monday“ (1966) stammt von …
+* The Mamas & the Papas
+- The Supremes
+- The Beach Boys
+- The Turtles
+
+~ In welchem Jahr spielten die Beatles ihre letzten Konzerte in Deutschland? = 1966
+` },
+    { id: 'jahrzehnte', text:
+`# Jahrzehnte-Quiz
+
+? 1969 betrat zum ersten Mal ein Mensch den Mond. Wer?
+* Neil Armstrong
+- Buzz Aldrin
+- Juri Gagarin
+- John Glenn
+
+~ In welchem Jahr lief der allererste „Tatort“? = 1970
+
+? Mit welchem Lied gewann ABBA 1974 den Grand Prix Eurovision?
+* Waterloo
+- Dancing Queen
+- Mamma Mia
+- SOS
+
+? In welcher Stadt gewann Deutschland 1974 das WM-Finale?
+* München
+- Berlin
+- Rom
+- Madrid
+
+? Welche Sängerin landete 1983 mit „99 Luftballons“ einen Welthit?
+* Nena
+- Nina Hagen
+- Sandra
+- Kim Wilde
+
+? Wie heißt das bunte Dreh-Rätsel, das in den 80ern jeder hatte?
+* Zauberwürfel
+- Tamagotchi
+- Gameboy
+- Jo-Jo
+
+~ In welchem Jahr fiel die Berliner Mauer? = 1989
+
+? Wie viele Bundesländer hat Deutschland seit 1990?
+* 16
+- 11
+- 12
+- 15
+
+? Welcher Film mit Leonardo DiCaprio lief 1997 im Kino?
+* Titanic
+- Avatar
+- Inception
+- Gladiator
+
+~ Seit welchem Jahr bezahlen wir mit Euro-Bargeld? = 2002
+
+? Welches Gerät stellte Apple 2007 vor?
+* iPhone
+- iPod
+- iPad
+- Apple Watch
+
+? Wer schoss 2014 das Siegtor im WM-Finale gegen Argentinien?
+* Mario Götze
+- Thomas Müller
+- Miroslav Klose
+- André Schürrle
+` },
+    { id: 'preise1966', text:
+`# Was kostete das 1966?
+// ⚠ Die Werte sind ungefähre Angaben. Bitte vor der Party kurz nachprüfen!
+// Gewonnen hat, wer am nächsten dran ist.
+
+~ Was kostete 1966 das Porto für einen Standardbrief (in Pfennig)? = 20
+~ Was kostete 1966 ungefähr ein Liter Normalbenzin (in Pfennig)? = 58
+~ Was kostete 1966 ungefähr ein neuer VW Käfer (in DM)? = 4800
+~ Wie hoch war 1966 ungefähr der durchschnittliche Bruttomonatslohn (in DM)? = 850
+` },
+    { id: 'schaetzglas', text:
+`# Schätzglas
+// Die Zahl hinter = durch die echte Anzahl ersetzen, bevor du auflöst.
+~ Wie viele Bonbons sind im Glas? = 0
+` }
+  ];
+
+  const WHEEL_TASKS =
+`Hält eine kurze Rede 🎤
+Erzählt die lustigste Peti-Geschichte
+Singt den Refrain vom nächsten Song
+Macht ein Foto mit dem Geburtstagskind 📸
+Darf sich den nächsten Song wünschen 🎵
+Holt dem Geburtstagskind ein Getränk 🥂
+Bringt einen Toast aus
+Tanzt 30 Sekunden mit dem Geburtstagskind 💃
+Verrät ein Geheimnis 🤫
+Macht dem Geburtstagskind ein Kompliment`;
+
+  const VOTE_PRESETS = [
+    { label: 'Eigene Frage', q: '', o: '' },
+    { label: 'Playback-Show', q: 'Welches Team hatte die beste Playback-Show?', o: 'Team 1\nTeam 2\nTeam 3\nTeam 4' },
+    { label: 'Wer kommt zuletzt nach Hause?', q: 'Wer kommt heute als Letzte(r) nach Hause?', o: '{gaeste}' },
+    { label: 'Wer tanzt am meisten?', q: 'Wer tanzt heute am meisten?', o: '{gaeste}' },
+    { label: 'Beste Rede', q: 'Wer hat die beste Rede gehalten?', o: '{gaeste}' },
+    { label: 'Bestes Musik-Jahrzehnt', q: 'Welches Jahrzehnt hatte die beste Musik?', o: '60er\n70er\n80er\n90er\n2000er\n2010er\n2020er' },
+    { label: 'Wie alt fühlt sich {name} an?', q: 'Wie alt wirkt {name} heute?', o: '29 😎\n39\n49\n60 – in Bestform!' }
+  ];
+
+  const SLIDE_PRESETS = [
+    { label: 'Eigene Ansage', e: '📣', t: '', x: '' },
+    { label: 'Ja-Nein-Verbot', e: '🚫', t: 'Ja-Nein-Verbot!', x: 'Jeder hat 3 Wäscheklammern. Wer „Ja“ oder „Nein“ sagt, muss eine an die Person abgeben, die es gehört hat. Wer am Ende die meisten hat, gewinnt!' },
+    { label: '60 Gründe', e: '💌', t: '60 Gründe, warum wir {name} lieben', x: 'Schreib auf einen Zettel, was du an {name} besonders magst, und wirf ihn ins Glas. {name} zieht im Laufe des Abends.' },
+    { label: 'Zeitkapsel', e: '⏳', t: 'Zeitkapsel zum 70.', x: 'Schreib eine Botschaft für {name}s 70. Geburtstag. Die Kiste wird heute versiegelt und erst {datum70} geöffnet.' },
+    { label: 'Bingo', e: '🎯', t: '{name}-Bingo!', x: 'Kreuz an, was {name} heute sagt oder tut. Wer zuerst eine volle Reihe hat, ruft laut BINGO!' },
+    { label: 'Schätzglas', e: '🍬', t: 'Schätzglas', x: 'Wie viele Bonbons sind im Glas? Trag deinen Tipp auf der Liste ein. Die Auflösung kommt später!' },
+    { label: 'Was ist im Sack?', e: '👜', t: 'Was ist im Sack?', x: 'Nur fühlen, nicht gucken! Schreibt eure Tipps auf den Zettel. Alles stammt aus {name}s Jugend.' },
+    { label: 'Playback-Show', e: '🎤', t: 'Playback-Show!', x: 'Findet euch in Teams, sucht euch einen Hit aus und legt los. Danach stimmen alle per Handy ab.' },
+    { label: 'Buffet', e: '🍽️', t: 'Das Buffet ist eröffnet!', x: 'Guten Appetit!' },
+    { label: 'Tanzfläche', e: '💃', t: 'Tanzfläche frei!', x: 'Wünsch dir deinen Song über den QR-Code.' }
+  ];
+
+  // ================= Zustand =================
+  const DEF_SETTINGS = { name: 'Peti', title: 'Peti wird 60', birthday: '', autoApprove: false };
+  function fresh(){
+    return { players: {}, view: 'lobby', quiz: null, quizSet: null, buzzer: null, vote: null, wheel: null, timer: null, slide: null, wall: [], pending: [], wishUsed: [] };
+  }
+  let H = Object.assign(fresh(), Core.store.get('spiele_host', {}));
+  let settings = Object.assign({}, DEF_SETTINGS, Core.store.get('spiele_settings', {}));
+  let sets = Core.store.get('spiele_sets', null) || DEFAULT_SETS.map(s => ({ id: s.id, text: s.text }));
+  let photos = Core.store.get('spiele_photos', []);
+  let lists = Object.assign({ wheel: WHEEL_TASKS }, Core.lists());
+
+  function saveAll(){
+    Core.store.set('spiele_host', H);
+    Core.store.set('spiele_settings', settings);
+  }
+  function sub(s){
+    let d70 = 'zum 70. Geburtstag';
+    if(settings.birthday){
+      const b = new Date(settings.birthday + 'T00:00:00');
+      if(!isNaN(b)){ b.setFullYear(b.getFullYear() + 70); d70 = 'am ' + b.toLocaleDateString('de-DE'); }
+    }
+    return String(s || '').replace(/\{name\}/g, settings.name || 'Peti').replace(/\{datum70\}/g, d70);
+  }
+
+  let toastT = null;
+  function toast(msg){
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function playersSorted(){
+    return Object.entries(H.players).map(([id, p]) => ({ id, name: p.name, score: p.score || 0 }))
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  }
+  function playerName(pid){ return (H.players[pid] && H.players[pid].name) || 'Jemand'; }
+
+  // ================= Veröffentlichen =================
+  let conn = null, pubT = null, lastPub = 0;
+  const VIEW_NAMES = { lobby: 'Startbild', quiz: 'Quiz', buzzer: 'Song-Buzzer', vote: 'Abstimmung', wall: 'Grüße-Wand', wheel: 'Glücksrad', timer: 'Timer', slide: 'Ansage', scores: 'Rangliste' };
+
+  function publicQuiz(){
+    const z = H.quiz;
+    if(!z) return null;
+    const o = {
+      qid: z.qid, mode: z.mode, title: z.title, idx: z.idx, total: z.total, phase: z.phase,
+      type: z.type, text: z.text, options: z.options, img: z.img, limit: z.limit,
+      left: z.phase === 'ask' && z.limit ? Math.max(0, z.askedAt + z.limit * 1000 - Date.now()) : null,
+      answered: Object.keys(z.answers).length,
+      excludeName: z.excludeName || null,
+      extra: z.extra || null
+    };
+    if(z.phase === 'ask') o.answeredIds = Object.keys(z.answers);
+    if(z.phase === 'reveal'){
+      o.points = z.points;
+      if(z.type === 'mc'){
+        o.correct = z.correct;
+        o.counts = z.options.map((_, i) => Object.values(z.answers).filter(a => a.v === i).length);
+      }else{
+        o.answer = z.answer;
+        o.top = (z.top || []).map(e => ({ pid: e.pid, name: playerName(e.pid), v: e.v }));
+      }
+      o.mine = {};
+      Object.entries(z.answers).forEach(([pid, a]) => { o.mine[pid] = a.v; });
+    }
+    return o;
+  }
+  function publicState(){
+    const b = H.buzzer, v = H.vote, t = H.timer;
+    return {
+      v: 1, ts: Date.now(),
+      party: { name: settings.name, title: settings.title },
+      view: H.view,
+      players: playersSorted(),
+      quiz: publicQuiz(),
+      buzzer: b ? {
+        rid: b.rid, open: b.open, points: b.points,
+        queue: b.queue.map(pid => ({ pid, name: playerName(pid) })),
+        locked: b.locked,
+        winner: b.winner ? { pid: b.winner, name: playerName(b.winner), points: b.points } : null,
+        reveal: b.reveal
+      } : null,
+      vote: v ? {
+        vid: v.vid, question: v.question, options: v.options, reveal: v.reveal,
+        counts: v.options.map((_, i) => Object.values(v.votes).filter(x => x === i).length),
+        total: Object.keys(v.votes).length
+      } : null,
+      wall: H.wall.slice(-40).map(w => ({ id: w.id, name: w.name, text: w.text, hasImg: w.hasImg, ts: w.ts })),
+      wheel: H.wheel ? { segments: H.wheel.segments, spin: H.wheel.spin } : null,
+      timer: t ? {
+        kind: t.kind, title: t.title, desc: t.desc, duration: t.duration, running: t.running,
+        left: t.running ? Math.max(0, t.endsAt - Date.now()) : t.left,
+        performer: t.performer ? { pid: t.performer, name: playerName(t.performer) } : null,
+        secret: t.secret || null, tid: t.tid
+      } : null,
+      slide: H.slide
+    };
+  }
+  function pub(){
+    saveAll();
+    render();
+    if(pubT) return;
+    const wait = Math.max(0, 250 - (Date.now() - lastPub));
+    pubT = setTimeout(() => {
+      pubT = null;
+      lastPub = Date.now();
+      if(conn) conn.ch.state.publish('state', publicState());
+    }, wait);
+  }
+
+  // ================= Eingaben von den Handys =================
+  const needSent = {};
+  function onInput(name, d){
+    if(name === 'join'){
+      const nm = String(d.name || '').trim().slice(0, 30);
+      if(!d.pid || !nm) return;
+      const p = H.players[d.pid];
+      if(!p) H.players[d.pid] = { name: nm, score: 0 };
+      else if(p.name !== nm) p.name = nm;
+      else { pub(); return; }
+      pub();
+    }else if(name === 'hello'){
+      pub();
+    }else if(name === 'answer'){
+      const z = H.quiz;
+      if(!z || z.phase !== 'ask' || d.qid !== z.qid || !H.players[d.pid] || z.answers[d.pid]) return;
+      if(z.excludeName && Core.nameKey(playerName(d.pid)) === Core.nameKey(z.excludeName)) return;
+      let v = d.value;
+      if(z.type === 'mc'){ v = parseInt(v, 10); if(!(v >= 0 && v < z.options.length)) return; }
+      else { v = parseFloat(String(v).replace(',', '.')); if(!isFinite(v)) return; }
+      z.answers[d.pid] = { v, t: Date.now() - z.askedAt };
+      pub();
+    }else if(name === 'buzz'){
+      const b = H.buzzer;
+      if(!b || !b.open || d.rid !== b.rid || !H.players[d.pid]) return;
+      if(b.locked.includes(d.pid) || b.queue.includes(d.pid)) return;
+      b.queue.push(d.pid);
+      pub();
+    }else if(name === 'vote'){
+      const v = H.vote;
+      if(!v || v.reveal || d.vid !== v.vid || !H.players[d.pid]) return;
+      const i = parseInt(d.option, 10);
+      if(!(i >= 0 && i < v.options.length)) return;
+      v.votes[d.pid] = i;
+      pub();
+    }else if(name === 'greet'){
+      if(!d.id || H.pending.some(g => g.id === d.id) || H.wall.some(g => g.id === d.id)) return;
+      const g = {
+        id: String(d.id).slice(0, 40),
+        name: String(d.name || 'Gast').trim().slice(0, 30),
+        text: String(d.text || '').trim().slice(0, 200),
+        hasImg: !!d.hasImg,
+        ts: Date.now()
+      };
+      if(!g.text && !g.hasImg) return;
+      if(settings.autoApprove){ H.wall.push(g); trimWall(); }
+      else H.pending.push(g);
+      pub();
+    }else if(name === 'need'){
+      const id = String(d.id || '');
+      if(!id || (needSent[id] && Date.now() - needSent[id] < 5000)) return;
+      needSent[id] = Date.now();
+      Core.fileGet(id).then(data => { if(data && conn) conn.sendFile(id, data); });
+    }
+  }
+  function trimWall(){ if(H.wall.length > 100) H.wall = H.wall.slice(-100); }
+
+  // ================= Quiz =================
+  function parseSet(text){
+    let title = '';
+    const qs = [];
+    let cur = null;
+    (text || '').split(/\r?\n/).forEach(raw => {
+      const line = raw.trim();
+      if(!line || line.startsWith('//')) return;
+      if(line.startsWith('#')){ if(!title) title = line.replace(/^#+\s*/, ''); return; }
+      if(line.startsWith('?')){ cur = { type: 'mc', text: line.slice(1).trim(), options: [], correct: -1 }; qs.push(cur); return; }
+      if(line.startsWith('~')){
+        const parts = line.slice(1).split('=');
+        cur = { type: 'est', text: parts[0].trim(), answerRaw: parts.slice(1).join('=').trim() };
+        qs.push(cur); return;
+      }
+      if(/^\[foto:/i.test(line)){ if(cur) cur.img = line.replace(/^\[foto:\s*/i, '').replace(/\]\s*$/, '').trim(); return; }
+      if((line[0] === '*' || line[0] === '-') && cur && cur.type === 'mc'){
+        if(line[0] === '*') cur.correct = cur.options.length;
+        cur.options.push(line.slice(1).trim());
+      }
+    });
+    const valid = qs.filter(q => q.text && (q.type === 'est'
+      ? q.answerRaw !== ''
+      : q.options.length >= 2 && q.options.length <= 4 && q.correct >= 0));
+    return { title: title || 'Quiz', questions: valid, skipped: qs.length - valid.length };
+  }
+  function estAnswer(raw){
+    if(String(raw).trim().toLowerCase() === 'tage'){
+      if(!settings.birthday) return null;
+      const b = new Date(settings.birthday + 'T00:00:00');
+      if(isNaN(b)) return null;
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      return Math.round((now - b) / 86400000);
+    }
+    const n = parseFloat(String(raw).replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+    return isFinite(n) ? n : null;
+  }
+
+  let quizTimer = null;
+  function quizAsk(q, meta){
+    let options = q.options || [], correct = q.correct;
+    if(q.type === 'mc'){
+      const order = Core.shuffle(options.map((_, i) => i));
+      options = order.map(i => q.options[i]);
+      correct = order.indexOf(q.correct);
+    }
+    const limit = parseInt($('quizLimit').value, 10) || 0;
+    H.quiz = {
+      qid: Core.uid('q_'), mode: meta.mode, title: meta.title, idx: meta.idx, total: meta.total,
+      phase: 'ask', type: q.type, text: q.text, options, correct,
+      answerRaw: q.answerRaw, img: q.img ? 'img:' + q.img : null,
+      askedAt: Date.now(), limit, answers: {}, points: {},
+      excludeName: meta.excludeName || null, extra: meta.extra || null
+    };
+    H.view = 'quiz';
+    clearTimeout(quizTimer);
+    if(limit) quizTimer = setTimeout(() => { if(H.quiz && H.quiz.phase === 'ask' && H.quiz.qid === qidNow()) quizReveal(); }, limit * 1000 + 300);
+    if(H.quiz.img) Core.fileGet(H.quiz.img).then(d => { if(!d) toast('Foto „' + q.img + '“ fehlt – bitte hochladen.'); });
+    pub();
+  }
+  function qidNow(){ return H.quiz && H.quiz.qid; }
+
+  function quizReveal(){
+    const z = H.quiz;
+    if(!z || z.phase !== 'ask') return;
+    clearTimeout(quizTimer);
+    z.phase = 'reveal';
+    z.points = {};
+    if(z.type === 'mc'){
+      const lim = (z.limit || 20) * 1000;
+      Object.entries(z.answers).forEach(([pid, a]) => {
+        if(a.v === z.correct) z.points[pid] = 100 + Math.round(50 * Math.max(0, 1 - a.t / lim));
+      });
+    }else{
+      z.answer = estAnswer(z.answerRaw);
+      if(z.answer != null){
+        const list = Object.entries(z.answers).map(([pid, a]) => ({ pid, v: a.v, d: Math.abs(a.v - z.answer) })).sort((a, b) => a.d - b.d);
+        const prizes = [100, 60, 30];
+        let rank = 0;
+        list.forEach((e, i) => {
+          if(i > 0 && e.d !== list[i - 1].d) rank = i;
+          if(rank < 3) z.points[e.pid] = prizes[rank];
+        });
+        z.top = list.slice(0, 5).map(e => ({ pid: e.pid, v: e.v }));
+      }else{
+        toast(String(z.answerRaw).toLowerCase() === 'tage' ? 'Für „tage“ bitte den Geburtstag in den Einstellungen eintragen.' : 'Keine gültige Zahl als Lösung.');
+      }
+    }
+    Object.entries(z.points).forEach(([pid, p]) => { if(H.players[pid]) H.players[pid].score = (H.players[pid].score || 0) + p; });
+    pub();
+  }
+
+  function currentSet(){ return sets.find(s => s.id === $('setSelect').value) || sets[0]; }
+  function quizGo(idx){
+    const set = currentSet();
+    if(!set) return;
+    const parsed = parseSet(set.text);
+    if(!parsed.questions.length){ toast('Dieser Katalog hat noch keine gültigen Fragen.'); return; }
+    if(idx < 0 || idx >= parsed.questions.length){ toast(idx < 0 ? 'Das ist schon die erste Frage.' : 'Das war die letzte Frage!'); return; }
+    if(H.quiz && H.quiz.phase === 'ask' && H.quiz.mode === 'set') quizReveal();
+    H.quizSet = { setId: set.id, idx };
+    quizAsk(parsed.questions[idx], { mode: 'set', title: parsed.title, idx, total: parsed.questions.length });
+  }
+
+  // ================= Wessen Wunsch? =================
+  let wishes = [];
+  function normSong(s){ return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function wishNext(){
+    const valid = wishes.filter(t => t && t.title && t.guestName);
+    if(valid.length < 1){ toast('Noch keine Wünsche geladen.'); return; }
+    const names = [];
+    const seen = new Set();
+    valid.forEach(t => { const k = Core.nameKey(t.guestName); if(!seen.has(k)){ seen.add(k); names.push(t.guestName.trim()); } });
+    if(names.length < 2){ toast('Dafür braucht es Wünsche von mindestens 2 Gästen.'); return; }
+    let pool = valid.filter(t => !H.wishUsed.includes(t.id));
+    if(!pool.length){ H.wishUsed = []; pool = valid; toast('Alle Wünsche waren schon dran, es geht von vorne los.'); }
+    const t = pool[Math.floor(Math.random() * pool.length)];
+    H.wishUsed.push(t.id);
+    const key = normSong(t.title) + '|' + normSong(t.artist);
+    const sameWishers = new Set(valid.filter(x => normSong(x.title) + '|' + normSong(x.artist) === key).map(x => Core.nameKey(x.guestName)));
+    const correctName = t.guestName.trim();
+    const others = Core.shuffle(names.filter(n => !sameWishers.has(Core.nameKey(n)))).slice(0, 3);
+    quizAsk({ type: 'mc', text: `Wer hat sich „${t.title}“ von ${t.artist} gewünscht?`, options: [correctName].concat(others), correct: 0 },
+      { mode: 'wish', title: 'Wessen Wunsch?', idx: H.wishUsed.length - 1, total: valid.length, excludeName: correctName, extra: { title: t.title, artist: t.artist } });
+  }
+
+  // ================= Buzzer =================
+  function buzzPoints(){ return Math.max(0, parseInt($('buzzPoints').value, 10) || 0); }
+  function buzzStart(){
+    H.buzzer = { rid: Core.uid('r_'), open: true, queue: [], locked: [], winner: null, reveal: null, points: buzzPoints() };
+    H.view = 'buzzer';
+    pub();
+  }
+  function buzzRight(){
+    const b = H.buzzer;
+    if(!b || !b.queue.length){ toast('Noch hat niemand gebuzzert.'); return; }
+    const pid = b.queue[0];
+    b.points = buzzPoints();
+    if(H.players[pid]) H.players[pid].score = (H.players[pid].score || 0) + b.points;
+    b.winner = pid; b.open = false; b.queue = [];
+    pub();
+  }
+  function buzzWrong(){
+    const b = H.buzzer;
+    if(!b || !b.queue.length){ toast('Noch hat niemand gebuzzert.'); return; }
+    b.locked.push(b.queue.shift());
+    b.open = true;
+    pub();
+  }
+  function buzzReveal(info){
+    if(!H.buzzer) buzzStart();
+    H.buzzer.reveal = info;
+    H.buzzer.open = false;
+    H.view = 'buzzer';
+    pub();
+  }
+
+  // ================= Abstimmung =================
+  function guestNames(){ return playersSorted().map(p => p.name).sort((a, b) => a.localeCompare(b)); }
+  function voteStart(){
+    const q = $('voteQuestion').value.trim();
+    let opts = $('voteOptions').value.split('\n').map(s => s.trim()).filter(Boolean);
+    if(opts.length === 1 && opts[0] === '{gaeste}') opts = guestNames();
+    opts = opts.slice(0, 12);
+    if(!q || opts.length < 2){ toast('Bitte Frage und mindestens 2 Antworten eintragen.'); return; }
+    H.vote = { vid: Core.uid('v_'), question: sub(q), options: opts.map(sub), votes: {}, reveal: false };
+    H.view = 'vote';
+    pub();
+  }
+
+  // ================= Glücksrad =================
+  function wheelSegments(){
+    let seg = $('wheelSegments').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 16);
+    return seg.map(sub);
+  }
+  function wheelShow(spin){
+    const segs = wheelSegments();
+    if(segs.length < 2){ toast('Bitte mindestens 2 Felder eintragen.'); return; }
+    const same = H.wheel && JSON.stringify(H.wheel.segments) === JSON.stringify(segs);
+    H.wheel = { segments: segs, spin: same && !spin ? H.wheel.spin : null, result: same && !spin ? H.wheel.result : null };
+    if(spin){
+      const target = Math.floor(Math.random() * segs.length);
+      H.wheel.spin = { id: Core.uid('s_'), target };
+      H.wheel.result = segs[target];
+    }
+    H.view = 'wheel';
+    pub();
+  }
+
+  // ================= Timer =================
+  function listItems(kind){
+    return (lists[kind] || '').split('\n').map(s => s.trim()).filter(Boolean);
+  }
+  let timerTick = null;
+  function timerPrepare(){
+    const kind = $('timerKind').value;
+    const duration = Math.max(5, Math.min(900, parseInt($('timerDuration').value, 10) || 60));
+    const t = { tid: Core.uid('t_'), kind, duration, running: false, left: duration * 1000, endsAt: 0, title: '', desc: '', performer: null, secret: null };
+    if(kind === 'free'){
+      t.title = $('timerTitle').value.trim() || 'Countdown';
+    }else if(kind === 'challenge'){
+      const raw = $('timerItem').value || '';
+      const [title, desc] = raw.split('|').map(s => (s || '').trim());
+      if(!title){ toast('Bitte eine Challenge auswählen.'); return false; }
+      t.title = sub(title); t.desc = sub(desc || '');
+    }else{
+      const term = $('timerItem').value;
+      const pid = $('timerPerformer').value;
+      if(!term){ toast('Bitte einen Begriff auswählen.'); return false; }
+      if(!pid || !H.players[pid]){ toast('Bitte auswählen, wer dran ist.'); return false; }
+      t.title = kind === 'pantomime' ? 'Pantomime' : 'Montagsmaler';
+      t.desc = kind === 'pantomime' ? 'Darstellen ohne Worte – alle raten!' : 'Zeichnen ohne Worte und Buchstaben – alle raten!';
+      t.performer = pid;
+      t.secret = sub(term);
+    }
+    H.timer = t;
+    H.view = 'timer';
+    pub();
+    return true;
+  }
+  function timerStart(){
+    if(!H.timer || H.view !== 'timer'){ if(!timerPrepare()) return; }
+    const t = H.timer;
+    if(t.running) return;
+    if(t.left <= 0) t.left = t.duration * 1000;
+    t.endsAt = Date.now() + t.left;
+    t.running = true;
+    pub();
+  }
+  function timerPause(){
+    const t = H.timer;
+    if(!t || !t.running) return;
+    t.left = Math.max(0, t.endsAt - Date.now());
+    t.running = false;
+    pub();
+  }
+  function timerReset(){
+    const t = H.timer;
+    if(!t) return;
+    t.running = false;
+    t.left = t.duration * 1000;
+    pub();
+  }
+  setInterval(() => {
+    const t = H.timer;
+    if(t && t.running && Date.now() >= t.endsAt){ t.running = false; t.left = 0; pub(); }
+    if(t && t.running) renderTimer();
+    if(H.quiz && H.quiz.phase === 'ask' && H.quiz.limit) renderQuiz();
+  }, 500);
+
+  // ================= Darstellung (Regie) =================
+  function render(){
+    $('onAir').textContent = VIEW_NAMES[H.view] || H.view;
+    $('playerCount').textContent = Object.keys(H.players).length;
+    const pend = H.pending.length;
+    $('pendingBadge').textContent = pend;
+    $('pendingBadge').classList.toggle('hidden', !pend);
+    renderQuiz(); renderBuzzer(); renderVote(); renderWall(); renderWheel(); renderTimer(); renderPlayers();
+  }
+
+  function renderQuiz(){
+    const z = H.quiz;
+    const target = z && z.mode === 'wish' ? $('wishLive') : $('quizLive');
+    const other = z && z.mode === 'wish' ? $('quizLive') : $('wishLive');
+    other.innerHTML = '';
+    if(!z){ target.innerHTML = ''; return; }
+    const n = Object.keys(H.players).length;
+    const answered = Object.keys(z.answers).length;
+    let h = `<div class="muted">${esc(z.title)} · Frage ${z.idx + 1}${z.total ? ' von ' + z.total : ''} · ${z.phase === 'ask' ? 'läuft' : 'aufgelöst'}${H.view !== 'quiz' ? ' · <b>nicht auf dem Beamer</b>' : ''}</div>`;
+    h += `<div class="big">${esc(z.text)}</div>`;
+    if(z.type === 'mc'){
+      h += '<div class="bars">' + z.options.map((o, i) => {
+        const c = Object.values(z.answers).filter(a => a.v === i).length;
+        const pct = answered ? Math.round(c / answered * 100) : 0;
+        const win = i === z.correct;
+        return `<div class="bar${win ? ' win' : ''}"><i style="width:${pct}%"></i><span>${'ABCD'[i]}: ${esc(o)} ${win ? '✓' : ''} · ${c}</span></div>`;
+      }).join('') + '</div>';
+    }else{
+      h += `<div>Lösung: <b>${esc(String(z.answerRaw))}</b>${String(z.answerRaw).toLowerCase() === 'tage' ? ' (' + (estAnswer('tage') ?? 'Geburtstag fehlt') + ')' : ''}</div>`;
+    }
+    if(z.phase === 'ask'){
+      const left = z.limit ? Math.max(0, Math.ceil((z.askedAt + z.limit * 1000 - Date.now()) / 1000)) : null;
+      h += `<div style="margin-top:6px;">${answered} von ${n} haben geantwortet${left != null ? ' · noch ' + left + ' s' : ''}</div>`;
+    }else{
+      const winners = Object.entries(z.points).sort((a, b) => b[1] - a[1]).map(([pid, p]) => `${esc(playerName(pid))} +${p}`);
+      h += `<div style="margin-top:6px;">${winners.length ? 'Punkte: ' + winners.join(', ') : 'Niemand hat Punkte bekommen.'}</div>`;
+    }
+    target.innerHTML = h;
+  }
+
+  function renderBuzzer(){
+    const b = H.buzzer;
+    if(!b){ $('buzzLive').innerHTML = ''; return; }
+    let h = `<div class="muted">${b.open ? '🔔 Buzzer ist frei' : '🔒 Buzzer gesperrt'}${H.view !== 'buzzer' ? ' · <b>nicht auf dem Beamer</b>' : ''}</div>`;
+    if(b.queue.length) h += `<div class="big">Dran: ${esc(playerName(b.queue[0]))}</div>` + (b.queue.length > 1 ? `<div>Danach: ${b.queue.slice(1).map(p => esc(playerName(p))).join(', ')}</div>` : '');
+    if(b.winner) h += `<div class="big">🏆 ${esc(playerName(b.winner))} lag richtig (+${b.points})</div>`;
+    if(b.locked.length) h += `<div class="muted">Falsch geraten: ${b.locked.map(p => esc(playerName(p))).join(', ')}</div>`;
+    if(b.reveal) h += `<div>Lösung: <b>${esc(b.reveal.title)}</b>${b.reveal.artists ? ' – ' + esc(b.reveal.artists) : ''}</div>`;
+    $('buzzLive').innerHTML = h;
+  }
+
+  function renderVote(){
+    const v = H.vote;
+    if(!v){ $('voteLive').innerHTML = ''; return; }
+    const total = Object.keys(v.votes).length;
+    const counts = v.options.map((_, i) => Object.values(v.votes).filter(x => x === i).length);
+    const max = Math.max(0, ...counts);
+    $('voteLive').innerHTML = `<div class="muted">${v.reveal ? 'Ergebnis wird gezeigt' : 'Abstimmung läuft'} · ${total} Stimmen${H.view !== 'vote' ? ' · <b>nicht auf dem Beamer</b>' : ''}</div><div class="big">${esc(v.question)}</div>`
+      + '<div class="bars">' + v.options.map((o, i) => `<div class="bar${v.reveal && counts[i] === max && max > 0 ? ' win' : ''}"><i style="width:${total ? counts[i] / total * 100 : 0}%"></i><span>${esc(o)} · ${counts[i]}</span></div>`).join('') + '</div>';
+  }
+
+  function thumb(id, imgEl){
+    Core.fileGet(id).then(d => { if(d && imgEl) imgEl.src = d; });
+  }
+  function renderWall(){
+    $('autoApprove').checked = !!settings.autoApprove;
+    $('wallCount').textContent = '(' + H.wall.length + ')';
+    const item = (g, actions) => `
+      <div class="item" data-id="${esc(g.id)}">
+        ${g.hasImg ? `<img data-img="${esc(g.id)}" alt="">` : ''}
+        <div class="grow"><b>${esc(g.name)}</b><br><span class="muted">${esc(g.text) || '(nur Foto)'}</span></div>
+        ${actions}
+      </div>`;
+    const pSig = H.pending.map(g => g.id).join(',');
+    if($('pendingList').dataset.sig !== pSig){
+      $('pendingList').dataset.sig = pSig;
+      $('pendingList').innerHTML = H.pending.length
+        ? H.pending.map(g => item(g, `<button class="btn small good" data-act="approve">Freigeben</button><button class="btn small" data-act="reject">✕</button>`)).join('')
+        : '<div class="muted" style="font-size:0.88rem;">Gerade nichts.</div>';
+      $('pendingList').querySelectorAll('img[data-img]').forEach(im => thumb(im.dataset.img, im));
+    }
+    const wSig = H.wall.map(g => g.id).join(',');
+    if($('wallList').dataset.sig !== wSig){
+      $('wallList').dataset.sig = wSig;
+      $('wallList').innerHTML = H.wall.length
+        ? H.wall.slice().reverse().map(g => item(g, `<button class="btn small" data-act="remove">Entfernen</button>`)).join('')
+        : '<div class="muted" style="font-size:0.88rem;">Noch keine Grüße.</div>';
+      $('wallList').querySelectorAll('img[data-img]').forEach(im => thumb(im.dataset.img, im));
+    }
+  }
+
+  function renderWheel(){
+    const w = H.wheel;
+    $('wheelLive').innerHTML = w && w.result ? `<div class="muted">Ergebnis (erscheint nach dem Drehen auf dem Beamer):</div><div class="big">🎯 ${esc(w.result)}</div>` : '';
+  }
+
+  function fmtTime(ms){
+    const s = Math.ceil(ms / 1000);
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function renderTimer(){
+    const t = H.timer;
+    if(!t){ $('timerLive').innerHTML = ''; return; }
+    const left = t.running ? Math.max(0, t.endsAt - Date.now()) : t.left;
+    $('timerLive').innerHTML = `<div class="muted">${t.running ? '▶ läuft' : (left <= 0 ? '⏰ Zeit ist um' : '⏸ angehalten')}${H.view !== 'timer' ? ' · <b>nicht auf dem Beamer</b>' : ''}</div>
+      <div class="big">${esc(t.title)} · ${fmtTime(left)}</div>
+      ${t.secret ? `<div>Begriff: <b>${esc(t.secret)}</b> · nur für ${esc(playerName(t.performer))} sichtbar</div>` : (t.desc ? `<div class="muted">${esc(t.desc)}</div>` : '')}`;
+  }
+
+  function renderPlayers(){
+    const ps = playersSorted();
+    const sig = JSON.stringify(ps);
+    if($('playerList').dataset.sig === sig) return;
+    $('playerList').dataset.sig = sig;
+    $('playerList').innerHTML = ps.length ? ps.map((p, i) => `
+      <div class="item" data-pid="${esc(p.id)}">
+        <div class="muted" style="width:26px;">${i + 1}.</div>
+        <div class="grow"><b>${esc(p.name)}</b></div>
+        <div class="score">${p.score}</div>
+        <button class="btn small" data-pts="-10">−10</button>
+        <button class="btn small" data-pts="10">+10</button>
+        <button class="btn small" data-pts="50">+50</button>
+        <button class="btn small" data-pts="100">+100</button>
+        <button class="btn small" data-act="kick" title="Entfernen">✕</button>
+      </div>`).join('') : '<div class="muted" style="font-size:0.88rem;">Noch niemand dabei. Die Gäste scannen den QR-Code auf dem Beamer.</div>';
+    // Auswahl für Pantomime aktualisieren
+    const sel = $('timerPerformer'), cur = sel.value;
+    sel.innerHTML = '<option value="">– bitte wählen –</option>' + ps.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+    sel.value = cur;
+  }
+
+  // ================= Bedienelemente =================
+  // Tabs
+  $('nav').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tab]');
+    if(!b) return;
+    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
+    document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.dataset.tab === b.dataset.tab));
+    window.scrollTo(0, 0);
+  });
+
+  $('showLobby').addEventListener('click', () => { H.view = 'lobby'; pub(); });
+
+  // Quiz-Kataloge
+  function renderSetSelect(){
+    const cur = $('setSelect').value;
+    $('setSelect').innerHTML = sets.map(s => `<option value="${esc(s.id)}">${esc(parseSet(s.text).title)}</option>`).join('');
+    if(sets.some(s => s.id === cur)) $('setSelect').value = cur;
+    loadSetEditor();
+  }
+  function loadSetEditor(){
+    const s = currentSet();
+    $('setText').value = s ? s.text : '';
+    updateSetInfo();
+  }
+  function updateSetInfo(){
+    const s = currentSet();
+    if(!s){ $('setInfo').textContent = ''; return; }
+    const p = parseSet(s.text);
+    $('setInfo').textContent = '· ' + p.questions.length + ' Fragen' + (p.skipped ? ', ' + p.skipped + ' unvollständig' : '');
+  }
+  let setSaveT = null;
+  $('setText').addEventListener('input', () => {
+    const s = currentSet();
+    if(!s) return;
+    s.text = $('setText').value;
+    clearTimeout(setSaveT);
+    setSaveT = setTimeout(() => {
+      Core.store.set('spiele_sets', sets);
+      const opt = $('setSelect').selectedOptions[0];
+      if(opt) opt.textContent = parseSet(s.text).title;
+    }, 300);
+    updateSetInfo();
+  });
+  $('setSelect').addEventListener('change', loadSetEditor);
+  $('setNew').addEventListener('click', () => {
+    const s = { id: Core.uid('set_'), text: '# Neues Quiz\n\n? Frage\n* richtige Antwort\n- falsche Antwort\n' };
+    sets.push(s);
+    Core.store.set('spiele_sets', sets);
+    renderSetSelect();
+    $('setSelect').value = s.id;
+    loadSetEditor();
+    $('setText').focus();
+  });
+  $('setDelete').addEventListener('click', () => {
+    const s = currentSet();
+    if(!s || !confirm('Katalog „' + parseSet(s.text).title + '“ wirklich löschen?')) return;
+    sets = sets.filter(x => x !== s);
+    if(!sets.length) sets = DEFAULT_SETS.map(x => ({ id: x.id, text: x.text }));
+    Core.store.set('spiele_sets', sets);
+    renderSetSelect();
+  });
+
+  $('quizStart').addEventListener('click', () => quizGo(0));
+  $('quizReveal').addEventListener('click', () => {
+    if(!H.quiz || H.quiz.phase !== 'ask'){ toast('Gerade läuft keine Frage.'); return; }
+    H.view = 'quiz'; quizReveal();
+  });
+  $('quizNext').addEventListener('click', () => {
+    if(!H.quizSet || !H.quiz || H.quiz.mode !== 'set'){ quizGo(0); return; }
+    quizGo(H.quizSet.idx + 1);
+  });
+  $('quizPrev').addEventListener('click', () => { if(H.quizSet) quizGo(H.quizSet.idx - 1); });
+  $('quizEnd').addEventListener('click', () => {
+    if(H.quiz && H.quiz.phase === 'ask') quizReveal();
+    H.view = 'scores'; pub();
+  });
+
+  // Fotos
+  function renderPhotos(){
+    $('photoList').innerHTML = photos.map(n => `<div class="photo"><img data-photo="${esc(n)}" alt=""><div title="${esc(n)}">${esc(n)}</div><button data-del="${esc(n)}" title="Löschen">✕</button></div>`).join('');
+    $('photoList').querySelectorAll('img[data-photo]').forEach(im => thumb('img:' + im.dataset.photo, im));
+    $('photoStatus').textContent = photos.length ? photos.length + ' Fotos gespeichert (nur auf diesem Gerät).' : 'Noch keine Fotos.';
+  }
+  $('photoInput').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    for(let i = 0; i < files.length; i++){
+      $('photoStatus').textContent = 'Verarbeite ' + (i + 1) + ' von ' + files.length + ' …';
+      try{
+        const data = await Core.compressImage(files[i], 1280, 0.78);
+        await Core.fileSet('img:' + files[i].name, data);
+        if(!photos.includes(files[i].name)) photos.push(files[i].name);
+      }catch(err){ toast('„' + files[i].name + '“ konnte nicht gelesen werden.'); }
+    }
+    Core.store.set('spiele_photos', photos);
+    e.target.value = '';
+    renderPhotos();
+  });
+  $('photoList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-del]');
+    if(!b) return;
+    photos = photos.filter(n => n !== b.dataset.del);
+    Core.store.set('spiele_photos', photos);
+    Core.fileDel('img:' + b.dataset.del);
+    renderPhotos();
+  });
+  $('photoSend').addEventListener('click', async () => {
+    if(!conn){ toast('Keine Verbindung.'); return; }
+    for(let i = 0; i < photos.length; i++){
+      const data = await Core.fileGet('img:' + photos[i]);
+      if(!data) continue;
+      $('photoStatus').textContent = 'Sende Foto ' + (i + 1) + ' von ' + photos.length + ' …';
+      await conn.sendFile('img:' + photos[i], data);
+    }
+    $('photoStatus').textContent = photos.length + ' Fotos an den Beamer gesendet ✓';
+  });
+
+  // Buzzer
+  $('buzzStart').addEventListener('click', buzzStart);
+  $('buzzRight').addEventListener('click', buzzRight);
+  $('buzzWrong').addEventListener('click', buzzWrong);
+  $('buzzSpotify').addEventListener('click', async () => {
+    $('buzzSpotify').disabled = true;
+    try{
+      const r = await Core.spotifyNowPlaying();
+      if(r.error) toast(r.error);
+      else buzzReveal({ title: r.title, artists: r.artists, cover: r.cover });
+    }catch(e){ toast('Spotify ist gerade nicht erreichbar.'); }
+    $('buzzSpotify').disabled = false;
+  });
+  $('buzzManualBtn').addEventListener('click', () => {
+    const v = $('buzzManual').value.trim();
+    if(!v){ toast('Bitte die Lösung eintippen.'); return; }
+    const [title, artists] = v.split(/\s[-–]\s/);
+    buzzReveal({ title: title.trim(), artists: (artists || '').trim(), cover: '' });
+    $('buzzManual').value = '';
+  });
+
+  // Wessen Wunsch
+  $('wishNext').addEventListener('click', wishNext);
+  $('wishReveal').addEventListener('click', () => {
+    if(!H.quiz || H.quiz.mode !== 'wish' || H.quiz.phase !== 'ask'){ toast('Gerade läuft keine Wunsch-Frage.'); return; }
+    H.view = 'quiz'; quizReveal();
+  });
+
+  // Abstimmung
+  $('votePreset').innerHTML = VOTE_PRESETS.map((p, i) => `<option value="${i}">${esc(sub(p.label))}</option>`).join('');
+  $('votePreset').addEventListener('change', () => {
+    const p = VOTE_PRESETS[$('votePreset').value];
+    $('voteQuestion').value = sub(p.q);
+    $('voteOptions').value = p.o === '{gaeste}' ? guestNames().join('\n') : sub(p.o);
+  });
+  $('voteGuests').addEventListener('click', () => { $('voteOptions').value = guestNames().join('\n'); });
+  $('voteStart').addEventListener('click', voteStart);
+  $('voteReveal').addEventListener('click', () => {
+    if(!H.vote){ toast('Es läuft keine Abstimmung.'); return; }
+    H.vote.reveal = true; H.view = 'vote'; pub();
+  });
+
+  // Grüße
+  $('wallShow').addEventListener('click', () => { H.view = 'wall'; pub(); });
+  $('autoApprove').addEventListener('change', () => {
+    settings.autoApprove = $('autoApprove').checked;
+    if(settings.autoApprove && H.pending.length){ H.wall.push(...H.pending); H.pending = []; trimWall(); }
+    pub();
+  });
+  $('pendingList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act]'), it = e.target.closest('.item');
+    if(!b || !it) return;
+    const g = H.pending.find(x => x.id === it.dataset.id);
+    if(!g) return;
+    H.pending = H.pending.filter(x => x !== g);
+    if(b.dataset.act === 'approve'){ H.wall.push(g); trimWall(); }
+    pub();
+  });
+  $('wallList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act="remove"]'), it = e.target.closest('.item');
+    if(!b || !it) return;
+    H.wall = H.wall.filter(x => x.id !== it.dataset.id);
+    pub();
+  });
+  $('wallResend').addEventListener('click', async () => {
+    if(!conn) return;
+    let n = 0;
+    for(const g of H.wall){
+      if(!g.hasImg) continue;
+      const d = await Core.fileGet(g.id);
+      if(d){ await conn.sendFile(g.id, d); n++; }
+    }
+    toast(n + ' Fotos erneut gesendet.');
+  });
+
+  // Glücksrad
+  function wheelPreset(){
+    const v = $('wheelPreset').value;
+    if(v === 'tasks') $('wheelSegments').value = lists.wheel;
+    else if(v === 'guests') $('wheelSegments').value = guestNames().slice(0, 16).join('\n');
+  }
+  $('wheelPreset').addEventListener('change', wheelPreset);
+  $('wheelSegments').addEventListener('input', () => {
+    if($('wheelPreset').value === 'tasks'){ lists.wheel = $('wheelSegments').value; Core.store.set('spiele_lists', lists); }
+  });
+  $('wheelShow').addEventListener('click', () => wheelShow(false));
+  $('wheelSpin').addEventListener('click', () => wheelShow(true));
+
+  // Timer
+  function fillTimerItems(){
+    const kind = $('timerKind').value;
+    $('timerPickWrap').classList.toggle('hidden', kind === 'free');
+    $('timerFreeWrap').classList.toggle('hidden', kind !== 'free');
+    $('timerPerformerWrap').classList.toggle('hidden', kind === 'challenge' || kind === 'free');
+    if(kind === 'free') return;
+    const items = listItems(kind);
+    $('timerItem').innerHTML = items.map(it => `<option value="${esc(it)}">${esc(it.split('|')[0].trim())}</option>`).join('');
+  }
+  $('timerKind').addEventListener('change', () => {
+    fillTimerItems();
+    if($('timerKind').value !== 'free') $('timerDuration').value = 60;
+  });
+  $('timerRandom').addEventListener('click', () => {
+    const o = $('timerItem').options;
+    if(o.length) $('timerItem').selectedIndex = Math.floor(Math.random() * o.length);
+  });
+  $('timerPerformerRandom').addEventListener('click', () => {
+    const ids = Object.keys(H.players);
+    if(ids.length) $('timerPerformer').value = ids[Math.floor(Math.random() * ids.length)];
+  });
+  $('timerShow').addEventListener('click', timerPrepare);
+  $('timerStart').addEventListener('click', () => {
+    // Neue Auswahl? Dann neu vorbereiten.
+    if(!H.timer || H.view !== 'timer' || timerChanged()) { if(!timerPrepare()) return; }
+    timerStart();
+  });
+  function timerChanged(){
+    const t = H.timer, kind = $('timerKind').value;
+    if(!t || t.kind !== kind) return true;
+    if(kind === 'free') return t.title !== ($('timerTitle').value.trim() || 'Countdown');
+    if(kind === 'challenge') return t.title !== sub(($('timerItem').value || '').split('|')[0].trim());
+    return t.secret !== sub($('timerItem').value) || t.performer !== $('timerPerformer').value;
+  }
+  $('timerPause').addEventListener('click', timerPause);
+  $('timerReset').addEventListener('click', timerReset);
+  ['challenge', 'pantomime', 'drawing'].forEach(k => {
+    const el = $('list' + k[0].toUpperCase() + k.slice(1));
+    el.value = lists[k];
+    el.addEventListener('input', () => {
+      lists[k] = el.value;
+      Core.store.set('spiele_lists', lists);
+      if($('timerKind').value === k) fillTimerItems();
+    });
+  });
+
+  // Ansage
+  $('slidePreset').innerHTML = SLIDE_PRESETS.map((p, i) => `<option value="${i}">${esc(sub(p.label))}</option>`).join('');
+  $('slidePreset').addEventListener('change', () => {
+    const p = SLIDE_PRESETS[$('slidePreset').value];
+    $('slideEmoji').value = p.e; $('slideTitle').value = sub(p.t); $('slideText').value = sub(p.x);
+  });
+  $('slideShow').addEventListener('click', () => {
+    const t = $('slideTitle').value.trim();
+    if(!t){ toast('Bitte einen Titel eintragen.'); return; }
+    H.slide = { emoji: $('slideEmoji').value.trim(), title: t, text: $('slideText').value.trim() };
+    H.view = 'slide';
+    pub();
+  });
+
+  // Rangliste
+  $('scoresShow').addEventListener('click', () => { H.view = 'scores'; pub(); });
+  $('playerList').addEventListener('click', (e) => {
+    const b = e.target.closest('button'), it = e.target.closest('.item');
+    if(!b || !it) return;
+    const p = H.players[it.dataset.pid];
+    if(!p) return;
+    if(b.dataset.act === 'kick'){
+      if(!confirm(p.name + ' wirklich entfernen?')) return;
+      delete H.players[it.dataset.pid];
+    }else{
+      p.score = (p.score || 0) + parseInt(b.dataset.pts, 10);
+    }
+    pub();
+  });
+  $('scoresReset').addEventListener('click', () => {
+    if(!confirm('Alle Punkte auf 0 setzen?')) return;
+    Object.values(H.players).forEach(p => p.score = 0);
+    pub();
+  });
+  $('playersClear').addEventListener('click', () => {
+    if(!confirm('Alle Mitspieler entfernen? Sie müssen sich dann neu anmelden.')) return;
+    H.players = {};
+    pub();
+  });
+
+  // Einstellungen
+  function fillSettings(){
+    $('setName').value = settings.name;
+    $('setTitle').value = settings.title;
+    $('setBirthday').value = settings.birthday;
+  }
+  $('settingsSave').addEventListener('click', () => {
+    settings.name = $('setName').value.trim() || 'Peti';
+    settings.title = $('setTitle').value.trim() || (settings.name + ' wird 60');
+    settings.birthday = $('setBirthday').value;
+    $('votePreset').innerHTML = VOTE_PRESETS.map((p, i) => `<option value="${i}">${esc(sub(p.label))}</option>`).join('');
+    $('slidePreset').innerHTML = SLIDE_PRESETS.map((p, i) => `<option value="${i}">${esc(sub(p.label))}</option>`).join('');
+    toast('Gespeichert ✓');
+    pub();
+  });
+  $('resetAll').addEventListener('click', () => {
+    if(!confirm('Wirklich alles zurücksetzen? Mitspieler, Punkte und Grüße gehen verloren.')) return;
+    H = fresh();
+    pub();
+  });
+
+  // ================= Start =================
+  function connectAbly(){
+    conn = Core.connect({
+      onInput,
+      onConnection(s){
+        $('connDot').className = 'dot' + (s === 'connected' ? ' ok' : s === 'connecting' ? ' wait' : ' bad');
+        $('connText').textContent = s === 'connected' ? 'live' : s === 'connecting' ? 'verbinde …' : 'getrennt';
+        if(s === 'connected') pub();
+      }
+    });
+    // Wünsche für "Wessen Wunsch?" laden
+    if(window.WunschSync){
+      WunschSync(conn.ably, Core.WISH_CHANNEL, {
+        onEvent(name, data){
+          if(name === 'new-track' && !wishes.some(t => t.id === data.id)) wishes.push(data);
+          const guests = new Set(wishes.map(t => Core.nameKey(t.guestName))).size;
+          $('wishInfo').textContent = wishes.length + ' Wünsche von ' + guests + ' Gästen geladen.';
+        },
+        onReady(){
+          if(!wishes.length) $('wishInfo').textContent = 'Noch keine Wünsche in der Wunschliste.';
+        }
+      });
+    }
+  }
+
+  function init(){
+    renderSetSelect();
+    renderPhotos();
+    fillTimerItems();
+    wheelPreset();
+    fillSettings();
+    $('votePreset').dispatchEvent(new Event('change'));
+    $('slidePreset').value = '1';
+    $('slidePreset').dispatchEvent(new Event('change'));
+    render();
+    connectAbly();
+  }
+
+  // Code-Sperre
+  const digits = Array.from(document.querySelectorAll('.code-digit'));
+  function checkCode(){
+    const v = digits.map(i => i.value).join('');
+    if(v.length < 4) return;
+    if(v === ADMIN_CODE){
+      $('codeGate').classList.add('hidden');
+      try{ sessionStorage.setItem('spiele_regie_ok', '1'); }catch(e){}
+      init();
+    }else{
+      $('codeError').textContent = 'Falscher Code.';
+      digits.forEach(i => i.value = '');
+      digits[0].focus();
+    }
+  }
+  digits.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+      $('codeError').textContent = '';
+      if(inp.value && i < digits.length - 1) digits[i + 1].focus();
+      checkCode();
+    });
+    inp.addEventListener('keydown', (e) => { if(e.key === 'Backspace' && !inp.value && i > 0) digits[i - 1].focus(); });
+  });
+  let ok = false;
+  try{ ok = sessionStorage.getItem('spiele_regie_ok') === '1'; }catch(e){}
+  if(ok){ $('codeGate').classList.add('hidden'); init(); }
+  else digits[0].focus();
+})();
+</script>
+</body>
+</html>

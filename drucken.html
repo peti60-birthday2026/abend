@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Druckvorlagen 🖨️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="spiele.css">
+<style>
+  main{ max-width:1000px; margin:0 auto; padding:24px 16px 80px; }
+  .intro h1{ font-size:clamp(2.6rem, 8vw, 4rem); margin:0 0 6px; }
+  .intro p{ color:var(--muted); margin:0 0 20px; line-height:1.5; }
+  .toc{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+  .toc a{ color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:7px 12px; font-size:0.85rem; background:rgba(255,255,255,0.04); }
+  section.block{ margin-bottom:28px; }
+  section.block > .card{ margin-bottom:12px; }
+  section.block h2{ font-family:'Bebas Neue', sans-serif; font-size:2rem; margin:0 0 4px; letter-spacing:0.02em; }
+  section.block p.hint{ color:var(--muted); font-size:0.9rem; margin:0 0 12px; line-height:1.5; }
+  .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-top:10px; }
+  .controls .field{ display:flex; flex-direction:column; gap:4px; font-size:0.8rem; color:var(--muted); }
+  .controls input[type=number]{ width:90px; }
+
+  /* Vorschau der Seiten */
+  .pages{ display:flex; flex-direction:column; gap:14px; align-items:center; overflow-x:auto; padding:4px; }
+  .sheet{
+    width:210mm; min-height:297mm; padding:10mm; background:#fff; color:#1b1b22;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45); border-radius:4px;
+    font-family:'Space Grotesk', sans-serif; flex:none;
+    transform-origin:top center;
+  }
+  @media (max-width:860px){ .sheet{ zoom:0.45; } }
+  .sheet h3{ font-family:'Bebas Neue', sans-serif; font-size:30pt; margin:0; color:#e0245e; letter-spacing:0.02em; line-height:1; }
+  .sheet .lead{ font-size:10.5pt; color:#555; margin:2mm 0 5mm; }
+
+  .grid{ display:grid; gap:0; }
+  .cut{ border:1px dashed #b9b9c6; padding:5mm; position:relative; break-inside:avoid; }
+
+  /* Bingo */
+  .bingo{ border:2px solid #e0245e; border-radius:4mm; padding:5mm; margin-bottom:5mm; break-inside:avoid; }
+  .bingo .bh{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3mm; }
+  .bingo .bh b{ font-family:'Bebas Neue', sans-serif; font-size:24pt; color:#e0245e; }
+  .bingo .bh span{ font-size:9pt; color:#666; }
+  .bgrid{ display:grid; grid-template-columns:repeat(5, 1fr); grid-auto-rows:20mm; border-top:1px solid #333; border-left:1px solid #333; }
+  .bgrid div{ border-right:1px solid #333; border-bottom:1px solid #333; display:flex; align-items:center; justify-content:center; text-align:center; font-size:8.5pt; line-height:1.15; padding:1.5mm; }
+  .bgrid div.free{ background:#ffe3ec; font-family:'Bebas Neue', sans-serif; font-size:20pt; color:#e0245e; }
+
+  .slip .t{ font-weight:700; font-size:11pt; color:#e0245e; }
+  .line{ border-bottom:1px solid #aaa; height:8mm; }
+  .from{ font-size:9pt; color:#666; margin-top:3mm; }
+  .tag{ position:absolute; top:3mm; right:4mm; font-size:7pt; color:#999; text-transform:uppercase; letter-spacing:0.1em; }
+
+  .term{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; height:44mm; }
+  .term b{ font-size:13pt; line-height:1.2; }
+  .term .tag{ position:static; margin-bottom:2mm; }
+
+  .label{ border:3px solid #e0245e; border-radius:6mm; padding:10mm; text-align:center; }
+  .label .big{ font-family:'Bebas Neue', sans-serif; font-size:56pt; line-height:0.95; color:#e0245e; }
+  .label .txt{ font-size:13pt; margin-top:4mm; }
+
+  table.list{ width:100%; border-collapse:collapse; font-size:11pt; }
+  table.list th, table.list td{ border:1px solid #999; padding:0 3mm; height:8.3mm; text-align:left; }
+  table.list th{ background:#ffe3ec; height:9mm; }
+
+  .poster{ text-align:center; }
+  .poster h3{ font-size:54pt; }
+  .qrs{ display:grid; grid-template-columns:1fr 1fr; gap:10mm; margin:10mm 0; }
+  .qrs > div{ border:2px solid #e0245e; border-radius:6mm; padding:7mm; }
+  .qrs b{ display:block; font-family:'Bebas Neue', sans-serif; font-size:28pt; color:#e0245e; margin-bottom:4mm; }
+  .qrs .qr{ display:flex; justify-content:center; }
+  .qrs .qr img, .qrs .qr canvas{ width:62mm !important; height:62mm !important; }
+  .qrs .u{ font-size:8pt; color:#666; word-break:break-all; margin-top:3mm; }
+  .wifi{ font-size:14pt; border:2px dashed #b9b9c6; border-radius:4mm; padding:5mm; }
+
+  @page{ size:A4; margin:0; }
+  @media print{
+    html, body{ background:#fff !important; }
+    body > *:not(main){ display:none !important; }
+    main{ max-width:none; padding:0; }
+    .intro, .toc, section.block > .card{ display:none !important; }
+    section.block{ display:none; margin:0; }
+    body[data-print] section.block.printing{ display:block; }
+    .pages{ gap:0; padding:0; display:block; }
+    .sheet{ box-shadow:none; border-radius:0; zoom:1 !important; break-after:page; margin:0; }
+    .sheet:last-child{ break-after:auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="intro">
+    <h1 class="display gradient-text">Druckvorlagen</h1>
+    <p>Für die Spiele ohne Handy. Texte anpassen, Vorschau prüfen, „Drucken“ klicken. Am besten auf A4 ohne Seitenränder („Ränder: keine“) und mit „Hintergrundgrafiken“ drucken.</p>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="row">
+        <div class="grow"><label class="lbl" for="pName" style="margin-top:0;">Name des Geburtstagskinds</label><input type="text" id="pName" maxlength="40"></div>
+        <div class="grow"><label class="lbl" for="pBirthday" style="margin-top:0;">Geburtstag</label><input type="date" id="pBirthday"></div>
+      </div>
+    </div>
+    <div class="toc">
+      <a href="#aushang">📌 QR-Aushang</a>
+      <a href="#bingo">🎯 Bingo</a>
+      <a href="#gruende">💌 60 Gründe</a>
+      <a href="#zeitkapsel">⏳ Zeitkapsel</a>
+      <a href="#schaetzglas">🍬 Schätzglas</a>
+      <a href="#sack">👜 Was ist im Sack?</a>
+      <a href="#janein">🚫 Ja-Nein-Verbot</a>
+      <a href="#begriffe">🎭 Pantomime &amp; Montagsmaler</a>
+      <a href="#challenges">⏱️ 60-Sekunden-Challenges</a>
+      <a href="#playback">🎤 Playback-Show</a>
+    </div>
+  </div>
+
+  <section class="block" id="aushang">
+    <div class="card">
+      <h2>📌 QR-Aushang</h2>
+      <p class="hint">Zum Aufhängen oder für die Tische: Songwunsch und Mitspielen auf einen Blick. Die QR-Codes funktionieren nur, wenn die Seite online geöffnet ist.</p>
+      <div class="row">
+        <div class="grow"><label class="lbl" for="wifiName">WLAN-Name (optional)</label><input type="text" id="wifiName"></div>
+        <div class="grow"><label class="lbl" for="wifiPass">WLAN-Passwort (optional)</label><input type="text" id="wifiPass"></div>
+      </div>
+      <div class="controls"><button class="btn primary" data-print="aushang">🖨️ Drucken</button></div>
+    </div>
+    <div class="pages" id="pagesAushang"></div>
+  </section>
+
+  <section class="block" id="bingo">
+    <div class="card">
+      <h2>🎯 Bingo</h2>
+      <p class="hint">Jede Karte wird anders gemischt. Mindestens 24 Begriffe, einer pro Zeile.</p>
+      <textarea id="bingoTerms" style="min-height:200px;"></textarea>
+      <div class="controls">
+        <label class="field">Anzahl Karten<input type="number" id="bingoCount" value="20" min="1" max="80"></label>
+        <button class="btn" id="bingoShuffle">🔀 Neu mischen</button>
+        <button class="btn primary" data-print="bingo">🖨️ Drucken</button>
+        <span class="muted" id="bingoInfo" style="font-size:0.85rem;"></span>
+      </div>
+    </div>
+    <div class="pages" id="pagesBingo"></div>
+  </section>
+
+  <section class="block" id="gruende">
+    <div class="card">
+      <h2>💌 60 Gründe</h2>
+      <p class="hint">Zettel zum Ausschneiden (12 pro Seite) und ein Etikett fürs Glas.</p>
+      <div class="controls">
+        <label class="field">Anzahl Zettel<input type="number" id="slipCount" value="60" min="12" max="240" step="12"></label>
+        <button class="btn primary" data-print="gruende">🖨️ Drucken</button>
+      </div>
+    </div>
+    <div class="pages" id="pagesGruende"></div>
+  </section>
+
+  <section class="block" id="zeitkapsel">
+    <div class="card">
+      <h2>⏳ Zeitkapsel</h2>
+      <p class="hint">Karten für Botschaften zum 70. (4 pro Seite) und ein Etikett für die Kiste.</p>
+      <div class="controls">
+        <label class="field">Anzahl Karten<input type="number" id="capsuleCount" value="40" min="4" max="200" step="4"></label>
+        <button class="btn primary" data-print="zeitkapsel">🖨️ Drucken</button>
+      </div>
+    </div>
+    <div class="pages" id="pagesZeitkapsel"></div>
+  </section>
+
+  <section class="block" id="schaetzglas">
+    <div class="card">
+      <h2>🍬 Schätzglas</h2>
+      <p class="hint">Etikett fürs Glas und eine Tippliste. Tipp: Die Lösung in der Regie im Quiz-Katalog „Schätzglas“ eintragen, dann kann man auch per Handy tippen.</p>
+      <div class="row">
+        <div class="grow"><label class="lbl" for="jarWhat">Was ist im Glas?</label><input type="text" id="jarWhat" value="Bonbons"></div>
+      </div>
+      <div class="controls"><button class="btn primary" data-print="schaetzglas">🖨️ Drucken</button></div>
+    </div>
+    <div class="pages" id="pagesSchaetzglas"></div>
+  </section>
+
+  <section class="block" id="sack">
+    <div class="card">
+      <h2>👜 Was ist im Sack?</h2>
+      <p class="hint">Gegenstände aus der Jugend des Geburtstagskinds in einen Stoffbeutel, die Teams fühlen und raten. Die Liste unten ist das Lösungsblatt, die Antwortbögen haben passend viele Zeilen.</p>
+      <textarea id="sackItems" style="min-height:160px;"></textarea>
+      <div class="controls">
+        <label class="field">Anzahl Bögen<input type="number" id="sackCount" value="8" min="1" max="40"></label>
+        <button class="btn primary" data-print="sack">🖨️ Drucken</button>
+      </div>
+    </div>
+    <div class="pages" id="pagesSack"></div>
+  </section>
+
+  <section class="block" id="janein">
+    <div class="card">
+      <h2>🚫 Ja-Nein-Verbot</h2>
+      <p class="hint">Regel-Karten für die Tische (2 pro Seite). Dazu pro Gast 3 Wäscheklammern bereitlegen.</p>
+      <div class="controls">
+        <label class="field">Anzahl Seiten<input type="number" id="jnCount" value="4" min="1" max="20"></label>
+        <button class="btn primary" data-print="janein">🖨️ Drucken</button>
+      </div>
+    </div>
+    <div class="pages" id="pagesJanein"></div>
+  </section>
+
+  <section class="block" id="begriffe">
+    <div class="card">
+      <h2>🎭 Pantomime &amp; ✏️ Montagsmaler</h2>
+      <p class="hint">Begriffskarten zum Ziehen (24 pro Seite). Die Listen sind dieselben wie in der Regie, wenn du beides auf diesem Gerät nutzt.</p>
+      <div class="row">
+        <div class="grow"><label class="lbl" for="termsP">Pantomime</label><textarea id="termsP"></textarea></div>
+        <div class="grow"><label class="lbl" for="termsD">Montagsmaler</label><textarea id="termsD"></textarea></div>
+      </div>
+      <div class="controls"><button class="btn primary" data-print="begriffe">🖨️ Drucken</button></div>
+    </div>
+    <div class="pages" id="pagesBegriffe"></div>
+  </section>
+
+  <section class="block" id="challenges">
+    <div class="card">
+      <h2>⏱️ 60-Sekunden-Challenges</h2>
+      <p class="hint">Eine Challenge pro Zeile: <code>Titel | Beschreibung</code>. 8 Karten pro Seite.</p>
+      <textarea id="chList" style="min-height:200px;"></textarea>
+      <div class="controls"><button class="btn primary" data-print="challenges">🖨️ Drucken</button></div>
+    </div>
+    <div class="pages" id="pagesChallenges"></div>
+  </section>
+
+  <section class="block" id="playback">
+    <div class="card">
+      <h2>🎤 Playback-Show</h2>
+      <p class="hint">Team-Karten (4 pro Seite). Abgestimmt wird danach per Handy (Regie → Abstimmung → Vorlage „Playback-Show“).</p>
+      <div class="controls">
+        <label class="field">Anzahl Teams<input type="number" id="pbCount" value="4" min="1" max="20"></label>
+        <button class="btn primary" data-print="playback">🖨️ Drucken</button>
+      </div>
+    </div>
+    <div class="pages" id="pagesPlayback"></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="spiele-core.js"></script>
+<script>
+(function(){
+  const Core = window.SpieleCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = Core.esc;
+  let settings = Core.settings();
+  let lists = Core.lists();
+  const saved = Core.store.get('spiele_print', {});
+
+  const DEFAULT_BINGO =
+`Erzählt von früher
+„Früher war alles besser“
+Bedankt sich für ein Geschenk
+Tanzt
+Lacht laut los
+Erwähnt das Alter
+„Ich fühl mich wie 40!“
+Umarmt jemanden
+Hält eine kleine Rede
+Bekommt Blumen
+Pustet Kerzen aus
+Sucht die Brille
+Stößt mit Sekt an
+„Das wär doch nicht nötig gewesen!“
+Erzählt eine Urlaubsgeschichte
+Macht ein Foto
+Fragt, ob alle satt sind
+Ist gerührt
+Singt mit
+Schaut aufs Handy
+„Wo ist die Zeit geblieben?“
+Erwähnt die Rente
+Wünscht sich einen Song
+Lobt das Essen
+Erzählt einen Witz
+Schaut auf die Uhr
+Ist sprachlos
+Zeigt alte Fotos
+Holt sich Nachschlag
+Ruft jemanden beim Spitznamen`;
+
+  const DEFAULT_SACK =
+`Musikkassette
+Bleistift (zum Kassette-Spulen)
+Schallplatte (Single)
+Brausepulver
+Lockenwickler
+Dia (aus dem Diaprojektor)
+Briefmarke
+Telefonkarte
+Murmel
+Zauberwürfel`;
+
+  // ---------- Eingaben merken ----------
+  function bind(id, key, def){
+    const el = $(id);
+    el.value = saved[key] != null ? saved[key] : def;
+    el.addEventListener('input', () => { saved[key] = el.value; Core.store.set('spiele_print', saved); renderAll(); });
+  }
+  $('pName').value = settings.name;
+  $('pBirthday').value = settings.birthday || '';
+  [['pName', 'name'], ['pBirthday', 'birthday']].forEach(([id, k]) => $(id).addEventListener('input', () => {
+    settings[k] = $(id).value.trim() || (k === 'name' ? 'Peti' : '');
+    const all = Core.store.get('spiele_settings', {}); all[k] = settings[k]; Core.store.set('spiele_settings', all);
+    renderAll();
+  }));
+  bind('bingoTerms', 'bingoTerms', DEFAULT_BINGO);
+  bind('bingoCount', 'bingoCount', '20');
+  bind('slipCount', 'slipCount', '60');
+  bind('capsuleCount', 'capsuleCount', '40');
+  bind('jarWhat', 'jarWhat', 'Bonbons');
+  bind('sackItems', 'sackItems', DEFAULT_SACK);
+  bind('sackCount', 'sackCount', '8');
+  bind('jnCount', 'jnCount', '4');
+  bind('pbCount', 'pbCount', '4');
+  bind('wifiName', 'wifiName', '');
+  bind('wifiPass', 'wifiPass', '');
+  // Begriffslisten teilen sich den Speicher mit der Regie
+  [['termsP', 'pantomime'], ['termsD', 'drawing'], ['chList', 'challenge']].forEach(([id, k]) => {
+    $(id).value = lists[k];
+    $(id).addEventListener('input', () => {
+      lists[k] = $(id).value;
+      const all = Core.store.get('spiele_lists', {}); all[k] = lists[k]; Core.store.set('spiele_lists', all);
+      renderAll();
+    });
+  });
+
+  // ---------- Hilfen ----------
+  const name = () => settings.name || 'Peti';
+  const lines = (s) => String(s || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const num = (id, min, max) => Math.max(min, Math.min(max, parseInt($(id).value, 10) || min));
+  function chunk(arr, n){ const out = []; for(let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+  function sheet(inner){ return `<div class="sheet">${inner}</div>`; }
+  function date70(){
+    if(!settings.birthday) return '';
+    const b = new Date(settings.birthday + 'T00:00:00');
+    if(isNaN(b)) return '';
+    b.setFullYear(b.getFullYear() + 70);
+    return b.toLocaleDateString('de-DE');
+  }
+  function year70(){
+    if(!settings.birthday) return '';
+    const b = new Date(settings.birthday + 'T00:00:00');
+    return isNaN(b) ? '' : String(b.getFullYear() + 70);
+  }
+
+  // Zufall mit festem Startwert, damit sich die Bingo-Karten nicht bei jedem Tippen ändern
+  let bingoSeed = saved.bingoSeed || Date.now();
+  function rng(seed){ let s = seed % 2147483647; if(s <= 0) s += 2147483646; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+
+  // ---------- Seiten ----------
+  function renderAushang(){
+    const wifi = $('wifiName').value.trim();
+    const pass = $('wifiPass').value.trim();
+    $('pagesAushang').innerHTML = sheet(`<div class="poster">
+      <h3>${esc(name())} wird 60!</h3>
+      <div class="lead" style="font-size:14pt;">Scan mit der Handy-Kamera und mach mit 🎉</div>
+      <div class="qrs">
+        <div><b>🎵 Songwunsch</b><div class="qr" id="qrWish"></div><div class="u" id="uWish"></div></div>
+        <div><b>🎮 Mitspielen</b><div class="qr" id="qrPlay"></div><div class="u" id="uPlay"></div></div>
+      </div>
+      ${wifi ? `<div class="wifi">📶 WLAN: <b>${esc(wifi)}</b>${pass ? ' · Passwort: <b>' + esc(pass) + '</b>' : ''}</div>` : ''}
+    </div>`);
+    const okW = Core.qr($('qrWish'), '../playlist.html', 400);
+    const okP = Core.qr($('qrPlay'), 'mitspielen.html', 400);
+    $('uWish').textContent = okW ? new URL('../playlist.html', location.href).href : '(QR-Code erscheint, wenn die Seite online geöffnet ist)';
+    $('uPlay').textContent = okP ? new URL('mitspielen.html', location.href).href : '(QR-Code erscheint, wenn die Seite online geöffnet ist)';
+  }
+
+  function renderBingo(){
+    const terms = lines($('bingoTerms').value);
+    const count = num('bingoCount', 1, 80);
+    $('bingoInfo').textContent = terms.length < 24 ? '⚠ Noch ' + (24 - terms.length) + ' Begriffe zu wenig' : terms.length + ' Begriffe';
+    if(terms.length < 24){ $('pagesBingo').innerHTML = ''; return; }
+    const r = rng(bingoSeed);
+    const cards = [];
+    for(let c = 0; c < count; c++){
+      const pool = terms.slice();
+      for(let i = pool.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      const pick = pool.slice(0, 24);
+      pick.splice(12, 0, null);
+      cards.push(`<div class="bingo"><div class="bh"><b>${esc(name())}-Bingo</b><span>Karte ${c + 1} · Kreuz an, was ${esc(name())} sagt oder tut. Volle Reihe? Ruf BINGO!</span></div>
+        <div class="bgrid">${pick.map(t => t == null ? '<div class="free">🎂 60</div>' : `<div>${esc(t)}</div>`).join('')}</div></div>`);
+    }
+    $('pagesBingo').innerHTML = chunk(cards, 2).map(p => sheet(p.join(''))).join('');
+  }
+
+  function renderGruende(){
+    const n = num('slipCount', 12, 240);
+    const slip = `<div class="cut slip" style="height:44mm;"><div class="t">💌 Ich mag an ${esc(name())}, dass …</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="from">von ______________________</div></div>`;
+    const pages = [];
+    pages.push(sheet(`<div class="label" style="margin-top:30mm;"><div style="font-size:40pt;">💌</div><div class="big">60 Gründe,</div><div class="big" style="font-size:36pt;">warum wir ${esc(name())} lieben</div>
+      <div class="txt">Zettel nehmen, ausfüllen, ins Glas werfen. ${esc(name())} zieht im Laufe des Abends.</div></div>`));
+    for(let p = 0; p < Math.ceil(n / 12); p++){
+      pages.push(sheet(`<div class="grid" style="grid-template-columns:1fr 1fr;">${slip.repeat(Math.min(12, n - p * 12))}</div>`));
+    }
+    $('pagesGruende').innerHTML = pages.join('');
+  }
+
+  function renderZeitkapsel(){
+    const n = num('capsuleCount', 4, 200);
+    const d = date70(), y = year70();
+    const card = `<div class="cut" style="height:136mm; display:flex; flex-direction:column;">
+      <div class="tag">Zeitkapsel</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:24pt; color:#e0245e; line-height:1;">⏳ Für ${esc(name())}</div>
+      <div style="font-size:10pt; color:#666; margin-bottom:3mm;">zum 70. Geburtstag${d ? ' am ' + d : ''}</div>
+      <div style="font-size:9.5pt; font-weight:600;">Das wünsche ich dir für die nächsten 10 Jahre:</div><div class="line"></div><div class="line"></div><div class="line"></div>
+      <div style="font-size:9.5pt; font-weight:600; margin-top:3mm;">So stelle ich mir dich mit 70 vor:</div><div class="line"></div><div class="line"></div>
+      <div style="font-size:9.5pt; font-weight:600; margin-top:3mm;">Meine Prognose für ${y || 'das Jahr deines 70.'}:</div><div class="line"></div>
+      <div class="from" style="margin-top:auto;">Von ______________________ · geschrieben am 60. Geburtstag</div></div>`;
+    const pages = [sheet(`<div class="label" style="margin-top:30mm;"><div style="font-size:40pt;">⏳</div><div class="big">Zeitkapsel</div>
+      <div class="big" style="font-size:34pt;">für ${esc(name())}s 70.</div>
+      <div class="txt" style="font-size:18pt; margin-top:8mm;"><b>Nicht öffnen vor dem ${d || '__________'}</b></div></div>`)];
+    for(let p = 0; p < Math.ceil(n / 4); p++) pages.push(sheet(`<div class="grid" style="grid-template-columns:1fr 1fr;">${card.repeat(Math.min(4, n - p * 4))}</div>`));
+    $('pagesZeitkapsel').innerHTML = pages.join('');
+  }
+
+  function renderSchaetzglas(){
+    const what = $('jarWhat').value.trim() || 'Bonbons';
+    const rows = Array.from({ length: 28 }, (_, i) => `<tr><td style="width:12mm;">${i + 1}</td><td></td><td style="width:45mm;"></td></tr>`).join('');
+    $('pagesSchaetzglas').innerHTML =
+      sheet(`<div class="label" style="margin-top:20mm;"><div style="font-size:44pt;">🍬</div><div class="big">Schätzglas</div><div class="txt" style="font-size:20pt;">Wie viele ${esc(what)} sind im Glas?</div><div class="txt">Tipp auf die Liste schreiben. Wer am nächsten dran ist, gewinnt!</div></div>`)
+      + sheet(`<h3>🍬 Schätzglas: Tippliste</h3><div class="lead">Wie viele ${esc(what)} sind im Glas?</div><table class="list"><tr><th>#</th><th>Name</th><th>Tipp</th></tr>${rows}</table>`);
+  }
+
+  function renderSack(){
+    const items = lines($('sackItems').value);
+    const n = num('sackCount', 1, 40);
+    const rows = Math.max(items.length, 5);
+    const bogen = `<div class="cut" style="height:138mm;"><div class="tag">Was ist im Sack?</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:24pt; color:#e0245e;">👜 Was ist im Sack?</div>
+      <div style="font-size:10pt; margin:1mm 0 3mm;">Team: ________________________</div>
+      ${Array.from({ length: rows }, (_, i) => `<div style="display:flex; gap:3mm; align-items:flex-end; height:${Math.min(9, 110 / rows)}mm; border-bottom:1px solid #aaa; font-size:9pt;"><b>${i + 1}.</b></div>`).join('')}</div>`;
+    const pages = [sheet(`<h3>👜 Lösungsblatt</h3><div class="lead">Nur für die Spielleitung. Reihenfolge = Nummer im Sack.</div>
+      <table class="list"><tr><th style="width:12mm;">#</th><th>Gegenstand</th></tr>${items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it)}</td></tr>`).join('')}</table>`)];
+    for(let p = 0; p < Math.ceil(n / 2); p++) pages.push(sheet(`<div class="grid" style="grid-template-columns:1fr;">${bogen.repeat(Math.min(2, n - p * 2))}</div>`));
+    $('pagesSack').innerHTML = pages.join('');
+  }
+
+  function renderJaNein(){
+    const n = num('jnCount', 1, 20);
+    const card = `<div class="cut" style="height:138mm; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <div style="font-size:48pt; line-height:1;">🚫</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:54pt; color:#e0245e; line-height:1;">Ja-Nein-Verbot!</div>
+      <div style="font-size:14pt; max-width:150mm; margin-top:5mm; line-height:1.4;">Jeder bekommt <b>3 Wäscheklammern</b>.<br>Wer „Ja“ oder „Nein“ sagt, muss eine an die Person abgeben, die es gehört hat.<br><b>Wer am Ende die meisten hat, gewinnt!</b></div></div>`;
+    $('pagesJanein').innerHTML = Array.from({ length: n }, () => sheet(`<div class="grid">${card}${card}</div>`)).join('');
+  }
+
+  function renderBegriffe(){
+    const cards = lines($('termsP').value).map(t => ({ k: '🎭 Pantomime', t }))
+      .concat(lines($('termsD').value).map(t => ({ k: '✏️ Montagsmaler', t })));
+    $('pagesBegriffe').innerHTML = chunk(cards, 24).map(p => sheet(`<div class="grid" style="grid-template-columns:repeat(4, 1fr);">${p.map(c => `<div class="cut term"><span class="tag">${c.k}</span><b>${esc(c.t)}</b></div>`).join('')}</div>`)).join('');
+  }
+
+  function renderChallenges(){
+    const items = lines($('chList').value).map(l => { const [t, d] = l.split('|').map(s => (s || '').trim()); return { t, d }; });
+    $('pagesChallenges').innerHTML = chunk(items, 8).map(p => sheet(`<div class="grid" style="grid-template-columns:1fr 1fr;">${p.map(c => `<div class="cut" style="height:68mm; display:flex; flex-direction:column; justify-content:center; text-align:center;">
+      <span class="tag">60-Sekunden-Challenge</span><div style="font-size:26pt;">⏱️</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:24pt; color:#e0245e; line-height:1;">${esc(c.t)}</div>
+      <div style="font-size:10.5pt; margin-top:2mm;">${esc(c.d || '')}</div></div>`).join('')}</div>`)).join('');
+  }
+
+  function renderPlayback(){
+    const n = num('pbCount', 1, 20);
+    const card = (i) => `<div class="cut" style="height:136mm; display:flex; flex-direction:column;">
+      <span class="tag">Playback-Show</span>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:30pt; color:#e0245e; line-height:1;">🎤 Team ${i}</div>
+      <div style="font-size:10pt; font-weight:600; margin-top:5mm;">Teamname</div><div class="line"></div>
+      <div style="font-size:10pt; font-weight:600; margin-top:4mm;">Unser Song</div><div class="line"></div>
+      <div style="font-size:10pt; font-weight:600; margin-top:4mm;">Interpret</div><div class="line"></div>
+      <div style="font-size:10pt; font-weight:600; margin-top:4mm;">Wir sind</div><div class="line"></div><div class="line"></div><div class="line"></div>
+      <div class="from" style="margin-top:auto;">Nach der Show stimmen alle per Handy ab.</div></div>`;
+    const cards = Array.from({ length: n }, (_, i) => card(i + 1));
+    $('pagesPlayback').innerHTML = chunk(cards, 4).map(p => sheet(`<div class="grid" style="grid-template-columns:1fr 1fr;">${p.join('')}</div>`)).join('');
+  }
+
+  function renderAll(){
+    renderAushang(); renderBingo(); renderGruende(); renderZeitkapsel(); renderSchaetzglas();
+    renderSack(); renderJaNein(); renderBegriffe(); renderChallenges(); renderPlayback();
+  }
+
+  $('bingoShuffle').addEventListener('click', () => {
+    bingoSeed = Date.now();
+    saved.bingoSeed = bingoSeed; Core.store.set('spiele_print', saved);
+    renderBingo();
+  });
+
+  document.querySelectorAll('button[data-print]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.print;
+    document.querySelectorAll('section.block').forEach(s => s.classList.toggle('printing', s.id === id));
+    document.body.dataset.print = id;
+    setTimeout(() => window.print(), 50);
+  }));
+  window.addEventListener('afterprint', () => { delete document.body.dataset.print; });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

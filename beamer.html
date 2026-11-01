@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party-Beamer 📺</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="spiele.css">
+<style>
+  html, body{ height:100%; overflow:hidden; }
+  body.idle-cursor{ cursor:none; }
+  .bg{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .bg span{
+    position:absolute; width:70vmax; height:70vmax; border-radius:50%;
+    filter:blur(90px); opacity:0.18;
+    animation: drift 26s ease-in-out infinite alternate;
+  }
+  .bg span:nth-child(1){ background:var(--neon); left:-20vmax; top:-25vmax; }
+  .bg span:nth-child(2){ background:var(--neon2); right:-25vmax; top:-10vmax; animation-delay:-9s; animation-duration:32s; }
+  .bg span:nth-child(3){ background:var(--gold); left:20vmax; bottom:-40vmax; opacity:0.1; animation-delay:-17s; animation-duration:38s; }
+  @keyframes drift{ to{ transform:translate(8vmax,6vmax) scale(1.15); } }
+
+  .stage{ position:relative; z-index:1; height:100%; display:flex; flex-direction:column; padding:3.5vh 4.5vw; }
+  .top{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:clamp(0.9rem, 1.5vw, 1.4rem); letter-spacing:0.22em; text-transform:uppercase; color:var(--muted);
+    min-height:3vh;
+  }
+  .mini-qr{ display:flex; align-items:center; gap:0.8vw; letter-spacing:0.05em; text-transform:none; }
+  .mini-qr .code{ background:#fff; padding:5px; border-radius:8px; line-height:0; }
+  .mini-qr .code img, .mini-qr .code canvas{ width:clamp(56px, 6vw, 110px) !important; height:auto !important; }
+  #main{ flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; position:relative; }
+
+  .enter{ animation: enter 0.8s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes enter{ from{ opacity:0; transform:translateY(4vh); filter:blur(8px); } to{ opacity:1; transform:none; filter:none; } }
+
+  .big-title{ font-family:'Bebas Neue', sans-serif; font-size:clamp(3rem, 9vw, 11rem); line-height:0.92; margin:0; }
+  .sub{ font-size:clamp(1.2rem, 2.6vw, 2.8rem); color:var(--muted); margin-top:1.5vh; }
+  .center{ text-align:center; align-items:center; }
+
+  /* Lobby */
+  .lobby{ display:flex; align-items:center; gap:5vw; }
+  .lobby .qr{ background:#fff; padding:1.2vw; border-radius:20px; line-height:0; flex:none; }
+  .lobby .qr img, .lobby .qr canvas{ width:clamp(180px, 24vw, 420px) !important; height:auto !important; }
+  .lobby .url{ font-size:clamp(0.9rem, 1.4vw, 1.3rem); color:var(--neon2); margin-top:1vh; word-break:break-all; }
+  .chips{ display:flex; flex-wrap:wrap; gap:0.8vw; margin-top:3vh; max-height:30vh; overflow:hidden; }
+  .chip{
+    padding:0.5em 1em; border-radius:999px; background:rgba(255,255,255,0.07); border:1px solid var(--line);
+    font-size:clamp(0.9rem, 1.6vw, 1.6rem); font-weight:600; animation: pop 0.5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes pop{ 0%{ opacity:0; transform:scale(0.6); } 70%{ transform:scale(1.08); } 100%{ opacity:1; transform:none; } }
+
+  /* Quiz */
+  .qhead{ display:flex; justify-content:space-between; align-items:center; gap:2vw; font-size:clamp(0.9rem, 1.6vw, 1.5rem); color:var(--muted); letter-spacing:0.12em; text-transform:uppercase; }
+  .qtext{ font-size:clamp(1.8rem, 4.2vw, 4.8rem); font-weight:700; line-height:1.12; margin:2vh 0 3vh; }
+  .qbody{ display:flex; gap:3vw; align-items:stretch; min-height:0; }
+  .qimg{ flex:0 0 auto; max-width:42vw; max-height:52vh; border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); align-self:center; }
+  .qimg img{ display:block; max-width:42vw; max-height:52vh; object-fit:contain; }
+  .qimg.loading{ width:30vw; height:40vh; background:var(--panel); display:flex; align-items:center; justify-content:center; color:var(--muted); }
+  .opts{ flex:1; display:grid; grid-template-columns:1fr 1fr; gap:1.6vw; align-content:center; }
+  .opt{
+    position:relative; display:flex; align-items:center; gap:1.2vw;
+    padding:2.2vh 1.6vw; border-radius:18px; background:var(--panel); border:3px solid transparent;
+    font-size:clamp(1.1rem, 2.4vw, 2.8rem); font-weight:600; transition:opacity .5s, transform .5s, border-color .5s;
+  }
+  .opt .letter{
+    flex:none; width:1.8em; height:1.8em; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    font-family:'Bebas Neue', sans-serif; font-size:1.2em; color:#14070c;
+  }
+  .opt:nth-child(1) .letter{ background:var(--a); } .opt:nth-child(2) .letter{ background:var(--b); }
+  .opt:nth-child(3) .letter{ background:var(--c); } .opt:nth-child(4) .letter{ background:var(--d); }
+  .opt .cnt{ margin-left:auto; font-size:0.75em; color:var(--muted); }
+  .opts.revealed .opt{ opacity:0.3; }
+  .opts.revealed .opt.right{ opacity:1; border-color:var(--green); transform:scale(1.04); background:rgba(62,224,143,0.12); }
+  .qfoot{ display:flex; justify-content:space-between; align-items:center; margin-top:3vh; font-size:clamp(1rem, 1.8vw, 1.8rem); color:var(--muted); }
+  .tbar{ height:8px; border-radius:99px; background:rgba(255,255,255,0.1); overflow:hidden; margin-top:1.5vh; }
+  .tbar div{ height:100%; background:linear-gradient(90deg, var(--neon), var(--gold)); border-radius:99px; }
+  .est-ask{ font-size:clamp(1.4rem, 3vw, 3.4rem); color:var(--neon2); font-weight:700; }
+  .est-answer{ font-family:'Bebas Neue', sans-serif; font-size:clamp(4rem, 13vw, 15rem); line-height:0.9; }
+  .podium{ display:flex; flex-direction:column; gap:1vh; margin-top:2vh; }
+  .prow{ display:flex; align-items:center; gap:1.4vw; font-size:clamp(1.1rem, 2.2vw, 2.4rem); background:var(--panel); border-radius:14px; padding:1.2vh 1.4vw; animation: enter .6s both; }
+  .prow b{ color:var(--gold); }
+  .prow .pts{ margin-left:auto; color:var(--green); font-weight:700; }
+
+  /* Buzzer */
+  .ring{
+    width:clamp(160px, 22vw, 380px); aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff7aa3, var(--neon) 60%, #a3123e);
+    box-shadow:0 0 0 0 rgba(255,61,122,0.6); animation: pulse 1.6s infinite; margin:4vh auto;
+    display:flex; align-items:center; justify-content:center; font-size:clamp(3rem, 8vw, 9rem);
+  }
+  @keyframes pulse{ 0%{ box-shadow:0 0 0 0 rgba(255,61,122,0.55); } 100%{ box-shadow:0 0 0 6vw rgba(255,61,122,0); } }
+  .buzz-name{ font-family:'Bebas Neue', sans-serif; font-size:clamp(4rem, 14vw, 16rem); line-height:0.9; animation: pop .5s both; }
+  .reveal-song{ display:flex; align-items:center; gap:4vw; }
+  .reveal-song img{ width:min(48vh, 34vw); aspect-ratio:1; object-fit:cover; border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,0.55); }
+
+  /* Abstimmung */
+  .vbars{ display:flex; flex-direction:column; gap:1.4vh; margin-top:3vh; }
+  .vbar{ position:relative; background:var(--panel); border-radius:14px; overflow:hidden; padding:1.4vh 1.6vw; font-size:clamp(1.1rem, 2.3vw, 2.6rem); font-weight:600; display:flex; gap:1vw; border:3px solid transparent; transition:border-color .5s; }
+  .vbar i{ position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg, rgba(255,61,122,0.45), rgba(255,207,92,0.35)); transition:width .6s cubic-bezier(.2,.8,.2,1); }
+  .vbar span{ position:relative; }
+  .vbar .n{ margin-left:auto; color:var(--gold); }
+  .vbar.win{ border-color:var(--green); }
+  .vbar.win i{ background:linear-gradient(90deg, rgba(62,224,143,0.55), rgba(77,227,255,0.35)); }
+
+  /* Grüße */
+  .wall{ display:flex; gap:4vw; align-items:center; height:100%; }
+  .wall-card{ flex:1; display:flex; gap:3vw; align-items:center; min-width:0; }
+  .wall-card img{ max-width:44vw; max-height:66vh; border-radius:18px; object-fit:contain; box-shadow:0 30px 80px rgba(0,0,0,0.55); }
+  .wall-text{ flex:1; min-width:0; }
+  .wall-text .msg{ font-size:clamp(1.6rem, 3.6vw, 4.2rem); font-weight:600; line-height:1.2; overflow-wrap:break-word; }
+  .wall-text .from{ font-size:clamp(1.1rem, 2.2vw, 2.4rem); color:var(--gold); margin-top:2vh; }
+  .wall-side{ flex:none; text-align:center; color:var(--muted); font-size:clamp(0.9rem, 1.4vw, 1.3rem); }
+  .wall-side .code{ background:#fff; padding:0.8vw; border-radius:14px; line-height:0; margin-bottom:1vh; display:inline-block; }
+  .wall-side .code img, .wall-side .code canvas{ width:clamp(100px, 12vw, 220px) !important; height:auto !important; }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:1.5vh; flex-wrap:wrap; max-width:14vw; }
+  .dots i{ width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.2); }
+  .dots i.on{ background:var(--gold); }
+
+  /* Glücksrad */
+  .wheel-wrap{ display:flex; align-items:center; justify-content:center; gap:4vw; height:100%; }
+  .wheel-box{ position:relative; flex:none; }
+  .wheel-box canvas{ display:block; }
+  .pointer{ position:absolute; left:50%; top:-1.2vh; transform:translateX(-50%); width:0; height:0; border-left:2.2vh solid transparent; border-right:2.2vh solid transparent; border-top:4.4vh solid var(--gold); filter:drop-shadow(0 4px 8px rgba(0,0,0,0.6)); z-index:2; }
+  .wheel-result{ max-width:36vw; }
+  .wheel-result .big-title{ font-size:clamp(2.4rem, 6vw, 7rem); }
+
+  /* Timer */
+  .timer{ display:flex; align-items:center; gap:5vw; }
+  .tring{ position:relative; flex:none; width:min(60vh, 40vw); aspect-ratio:1; }
+  .tring svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .tring .num{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue', sans-serif; font-size:min(20vh, 13vw); }
+  .tring.done .num{ color:var(--neon); animation: blink 0.8s steps(2) infinite; }
+  @keyframes blink{ 50%{ opacity:0.3; } }
+  .performer{ display:inline-block; margin-top:3vh; padding:0.5em 1.2em; border-radius:999px; background:rgba(255,207,92,0.12); border:1px solid rgba(255,207,92,0.4); font-size:clamp(1.2rem, 2.6vw, 2.8rem); }
+  .performer b{ color:var(--gold); }
+
+  /* Ansage */
+  .slide-emoji{ font-size:clamp(4rem, 12vw, 13rem); line-height:1; margin-bottom:2vh; }
+  .slide-text{ font-size:clamp(1.3rem, 3vw, 3.4rem); max-width:70vw; margin:3vh auto 0; line-height:1.35; }
+
+  /* Rangliste */
+  .scores{ display:flex; flex-direction:column; gap:1.1vh; margin-top:3vh; }
+  .srow{ display:flex; align-items:center; gap:1.6vw; background:var(--panel); border-radius:14px; padding:1.2vh 1.6vw; font-size:clamp(1rem, 2.2vw, 2.4rem); animation: enter .6s both; }
+  .srow .rk{ width:2.2em; font-family:'Bebas Neue', sans-serif; font-size:1.3em; color:var(--muted); }
+  .srow .nm{ flex:1; font-weight:600; }
+  .srow .sc{ color:var(--gold); font-weight:700; }
+  .srow.r1{ background:linear-gradient(90deg, rgba(255,207,92,0.28), var(--panel)); font-size:clamp(1.3rem, 2.9vw, 3.2rem); }
+  .srow.r2{ background:linear-gradient(90deg, rgba(200,200,215,0.2), var(--panel)); }
+  .srow.r3{ background:linear-gradient(90deg, rgba(205,127,50,0.25), var(--panel)); }
+
+  #confetti{ position:fixed; inset:0; pointer-events:none; z-index:30; }
+  .conn{ position:fixed; left:50%; bottom:2vh; transform:translateX(-50%); z-index:40; background:rgba(23,23,31,0.92); border:1px solid var(--line); padding:8px 16px; border-radius:999px; color:var(--neon); display:none; }
+  .conn.show{ display:block; }
+  .hint{ position:fixed; right:14px; bottom:10px; z-index:40; font-size:0.8rem; color:var(--muted); opacity:0; transition:opacity .4s; }
+  body:not(.idle-cursor) .hint{ opacity:0.7; }
+  @media (prefers-reduced-motion: reduce){ .bg span, .ring, .enter, .chip, .buzz-name, .prow, .srow{ animation:none; } }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><span></span><span></span><span></span></div>
+<div class="stage">
+  <div class="top">
+    <div id="partyTitle"></div>
+    <div class="mini-qr" id="miniQr"><span>Mitspielen</span><div class="code" id="miniQrCode"></div></div>
+  </div>
+  <div id="main"></div>
+</div>
+<canvas id="confetti"></canvas>
+<div class="conn" id="conn">Verbindung unterbrochen …</div>
+<div class="hint">Klick = Vollbild &amp; Ton an</div>
+
+<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="spiele-core.js"></script>
+<script>
+(function(){
+  const Core = window.SpieleCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = Core.esc;
+  const main = $('main');
+  let S = null;            // letzter Spielstand
+  let shownKey = null;     // was gerade aufgebaut ist
+  let receivedAt = 0;
+  let conn = null;
+  let gotState = false;
+
+  // ---------- Ton ----------
+  let actx = null;
+  function beep(freq, dur, type){
+    try{
+      if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'square'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.15, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + dur);
+    }catch(e){}
+  }
+  function fanfare(){ [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.25, 'triangle'), i * 120)); }
+
+  // ---------- Konfetti ----------
+  const cv = $('confetti'), cx = cv.getContext('2d');
+  let bits = [], confRaf = null;
+  function confetti(){
+    cv.width = innerWidth; cv.height = innerHeight;
+    const cols = ['#ff3d7a', '#4de3ff', '#ffcf5c', '#3ee08f', '#ffffff'];
+    for(let i = 0; i < 180; i++) bits.push({
+      x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5,
+      vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4, r: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.3, s: 6 + Math.random() * 8, c: cols[i % cols.length]
+    });
+    if(!confRaf) confRaf = requestAnimationFrame(stepConf);
+  }
+  function stepConf(){
+    cx.clearRect(0, 0, cv.width, cv.height);
+    bits.forEach(b => { b.x += b.vx; b.y += b.vy; b.vy += 0.04; b.r += b.vr; cx.save(); cx.translate(b.x, b.y); cx.rotate(b.r); cx.fillStyle = b.c; cx.fillRect(-b.s / 2, -b.s / 4, b.s, b.s / 2); cx.restore(); });
+    bits = bits.filter(b => b.y < cv.height + 30);
+    confRaf = bits.length ? requestAnimationFrame(stepConf) : null;
+  }
+
+  // ---------- Hilfen ----------
+  function party(){ return (S && S.party) || { name: 'Peti', title: 'Peti wird 60' }; }
+  function setMain(html){ main.innerHTML = html; main.classList.remove('enter'); void main.offsetWidth; main.classList.add('enter'); }
+  function fmt(n){ return Core.fmtNum(n); }
+  function fmtTime(ms){ const s = Math.ceil(Math.max(0, ms) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  async function fillImg(el, id){
+    const d = await conn.image(id);
+    if(d && el && el.isConnected){ el.classList.remove('loading'); el.innerHTML = '<img src="' + d + '" alt="">'; }
+  }
+
+  // ---------- Ansichten ----------
+  function render(){
+    if(!S) return;
+    $('partyTitle').textContent = party().title + ' 🎉';
+    const v = S.view;
+    $('miniQr').style.visibility = (v === 'lobby' || v === 'wall') ? 'hidden' : 'visible';
+    const fn = VIEWS[v] || VIEWS.lobby;
+    fn();
+  }
+
+  const VIEWS = {
+    lobby(){
+      const key = 'lobby';
+      if(shownKey !== key){
+        shownKey = key;
+        setMain(`
+          <div class="lobby">
+            <div class="qr" id="lobbyQr"></div>
+            <div style="min-width:0;">
+              <h1 class="big-title gradient-text">${esc(party().title)}</h1>
+              <div class="sub">Mach mit! QR-Code scannen und Namen eintragen.</div>
+              <div class="url" id="lobbyUrl"></div>
+              <div class="chips" id="chips"></div>
+            </div>
+          </div>`);
+        if(!Core.qr($('lobbyQr'), 'mitspielen.html', 512)) $('lobbyQr').classList.add('hidden');
+        $('lobbyUrl').textContent = new URL('mitspielen.html', location.href).href;
+        $('chips').dataset.names = '';
+      }
+      const names = S.players.map(p => p.name);
+      const chips = $('chips');
+      const have = chips.dataset.names ? chips.dataset.names.split('\u0001') : [];
+      if(names.join('\u0001') !== chips.dataset.names){
+        chips.innerHTML = names.map(n => `<span class="chip"${have.includes(n) ? ' style="animation:none"' : ''}>${esc(n)}</span>`).join('');
+        chips.dataset.names = names.join('\u0001');
+      }
+    },
+
+    quiz(){
+      const z = S.quiz;
+      if(!z){ VIEWS.lobby(); return; }
+      const key = 'quiz|' + z.qid + '|' + z.phase;
+      if(shownKey !== key){
+        const wasAsk = shownKey === 'quiz|' + z.qid + '|ask';
+        shownKey = key;
+        const head = `<div class="qhead"><span>${esc(z.title)}</span><span>${z.mode === 'wish' ? '🎶 Song ' + (z.idx + 1) : 'Frage ' + (z.idx + 1) + (z.total ? ' / ' + z.total : '')}</span></div>`;
+        const img = z.img ? `<div class="qimg loading" id="qimg">Foto lädt …</div>` : '';
+        let body = '';
+        if(z.type === 'mc'){
+          body = `<div class="opts${z.phase === 'reveal' ? ' revealed' : ''}">` + z.options.map((o, i) => `
+            <div class="opt${z.phase === 'reveal' && i === z.correct ? ' right' : ''}">
+              <span class="letter">${'ABCD'[i]}</span><span>${esc(o)}</span>
+              ${z.phase === 'reveal' ? `<span class="cnt">${z.counts[i]} ✋</span>` : ''}
+            </div>`).join('') + '</div>';
+        }else if(z.phase === 'ask'){
+          body = `<div style="flex:1; display:flex; align-items:center;"><div class="est-ask">🔢 Schätz mit dem Handy!<br><span class="muted" style="font-size:0.6em; font-weight:400;">Wer am nächsten dran ist, gewinnt.</span></div></div>`;
+        }else{
+          const top = (z.top || []).slice(0, 3);
+          body = `<div style="flex:1;">
+            <div class="muted" style="font-size:clamp(1rem,2vw,2rem);">Richtige Antwort</div>
+            <div class="est-answer gradient-text">${z.answer == null ? '?' : fmt(z.answer)}</div>
+            <div class="podium">${top.map((e, i) => `<div class="prow" style="animation-delay:${0.3 + i * 0.2}s">${['🥇', '🥈', '🥉'][i]} <b>${esc(e.name)}</b> <span class="muted">tippte ${fmt(e.v)}</span><span class="pts">+${(z.points || {})[e.pid] || 0}</span></div>`).join('') || '<div class="muted">Niemand hat geschätzt.</div>'}</div>
+          </div>`;
+        }
+        let foot = '';
+        if(z.phase === 'ask'){
+          foot = `<div class="qfoot"><span id="answered"></span><span id="qleft"></span></div>${z.limit ? '<div class="tbar"><div id="qbar"></div></div>' : ''}`;
+        }else if(z.mode === 'wish' && z.excludeName){
+          foot = `<div class="qfoot"><span>🎂 Gewünscht von <b style="color:var(--gold)">${esc(z.excludeName)}</b></span></div>`;
+        }else if(z.type === 'mc'){
+          const winners = Object.keys(z.points || {}).length;
+          foot = `<div class="qfoot"><span>${winners ? '🎉 ' + winners + ' ' + (winners === 1 ? 'Person lag' : 'Leute lagen') + ' richtig' : 'Diesmal lag niemand richtig 😅'}</span></div>`;
+        }
+        setMain(head + `<div class="qtext">${esc(z.text)}</div><div class="qbody">${img}${body}</div>` + foot);
+        if(z.img) fillImg($('qimg'), z.img);
+        if(z.phase === 'reveal' && wasAsk){ confetti(); fanfare(); }
+      }
+      if(z.phase === 'ask'){
+        const a = $('answered');
+        if(a) a.textContent = z.answered + ' von ' + S.players.length + ' haben geantwortet';
+      }
+    },
+
+    buzzer(){
+      const b = S.buzzer;
+      if(!b){ VIEWS.lobby(); return; }
+      const first = b.queue[0];
+      const key = 'buzz|' + b.rid + '|' + (first ? first.pid : '') + '|' + (b.winner ? b.winner.pid : '') + '|' + (b.reveal ? b.reveal.title : '') + '|' + b.open;
+      if(shownKey === key) return;
+      const prevFirst = shownKey && shownKey.split('|')[2];
+      shownKey = key;
+      let h = '';
+      if(b.reveal){
+        h = `<div class="reveal-song">${b.reveal.cover ? `<img src="${esc(b.reveal.cover)}" alt="">` : ''}
+          <div><div class="muted" style="font-size:clamp(1rem,2vw,2rem); letter-spacing:0.2em; text-transform:uppercase;">Die Lösung</div>
+          <h1 class="big-title gradient-text">${esc(b.reveal.title)}</h1>
+          <div class="sub" style="color:var(--text)">${esc(b.reveal.artists || '')}</div>
+          ${b.winner ? `<div class="performer" style="margin-top:4vh">🏆 <b>${esc(b.winner.name)}</b> +${b.winner.points}</div>` : ''}</div></div>`;
+      }else if(b.winner){
+        h = `<div class="center" style="display:flex; flex-direction:column;"><div class="sub">🏆 Richtig!</div><div class="buzz-name gradient-text">${esc(b.winner.name)}</div><div class="sub" style="color:var(--green)">+${b.winner.points} Punkte</div></div>`;
+        confetti(); fanfare();
+      }else if(first){
+        h = `<div class="center" style="display:flex; flex-direction:column;"><div class="sub">🔔 Am schnellsten war</div><div class="buzz-name gradient-text">${esc(first.name)}</div>
+          ${b.queue.length > 1 ? `<div class="sub">Danach: ${b.queue.slice(1, 5).map(q => esc(q.name)).join(', ')}</div>` : ''}</div>`;
+        if(prevFirst !== first.pid) beep(880, 0.35);
+      }else{
+        h = `<div class="center" style="display:flex; flex-direction:column;"><h1 class="big-title gradient-text">Wer erkennt den Song?</h1>
+          <div class="ring">🎵</div><div class="sub">${b.open ? 'Drück den Buzzer auf deinem Handy!' : 'Gleich geht\'s los …'}</div></div>`;
+      }
+      setMain(h);
+    },
+
+    vote(){
+      const v = S.vote;
+      if(!v){ VIEWS.lobby(); return; }
+      const key = 'vote|' + v.vid + '|' + v.reveal;
+      const max = Math.max(0, ...v.counts);
+      if(shownKey !== key){
+        const wasOpen = shownKey === 'vote|' + v.vid + '|false';
+        shownKey = key;
+        setMain(`<div class="qhead"><span>🗳️ Abstimmung</span><span id="vtotal"></span></div>
+          <div class="qtext">${esc(v.question)}</div>
+          <div class="vbars">${v.options.map((o, i) => `<div class="vbar" id="vb${i}"><i style="width:0%"></i><span>${esc(o)}</span><span class="n">0</span></div>`).join('')}</div>`);
+        if(v.reveal && wasOpen && max > 0){ confetti(); fanfare(); }
+      }
+      $('vtotal').textContent = v.total + (v.total === 1 ? ' Stimme' : ' Stimmen');
+      v.options.forEach((_, i) => {
+        const el = $('vb' + i);
+        if(!el) return;
+        el.querySelector('i').style.width = (v.total ? v.counts[i] / v.total * 100 : 0) + '%';
+        el.querySelector('.n').textContent = v.counts[i];
+        el.classList.toggle('win', v.reveal && max > 0 && v.counts[i] === max);
+      });
+    },
+
+    wall(){
+      if(shownKey !== 'wall'){
+        shownKey = 'wall';
+        setMain(`<div class="wall"><div class="wall-card" id="wallCard"></div>
+          <div class="wall-side"><div class="code" id="wallQr"></div><div>Schick deinen Gruß!</div><div class="dots" id="wallDots"></div></div></div>`);
+        if(!Core.qr($('wallQr'), 'mitspielen.html#gruss', 300)) $('wallQr').classList.add('hidden');
+        wallIdx = -1; wallSig = '';
+        showWallItem(true);
+      }else{
+        showWallItem(false);
+      }
+    },
+
+    wheel(){
+      const w = S.wheel;
+      if(!w){ VIEWS.lobby(); return; }
+      const key = 'wheel|' + JSON.stringify(w.segments);
+      if(shownKey !== key){
+        shownKey = key;
+        const free = main.getBoundingClientRect().height || innerHeight * 0.75;
+        const size = Math.round(Math.min(free * 0.9, innerWidth * 0.5));
+        setMain(`<div class="wheel-wrap"><div class="wheel-box"><div class="pointer"></div><canvas id="wheel" width="${size * 2}" height="${size * 2}" style="width:${size}px;height:${size}px"></canvas></div>
+          <div class="wheel-result" id="wheelResult"><h1 class="big-title gradient-text">Glücksrad</h1><div class="sub">Gleich wird gedreht …</div></div></div>`);
+        wheelRot = wheelRot || 0;
+        drawWheel(w.segments, wheelRot);
+        if(w.spin && w.spin.id === lastSpin){ showWheelResult(w.segments[w.spin.target], false); }
+      }
+      if(w.spin && w.spin.id !== lastSpin){
+        lastSpin = w.spin.id;
+        spinWheel(w.segments, w.spin.target);
+      }
+    },
+
+    timer(){
+      const t = S.timer;
+      if(!t){ VIEWS.lobby(); return; }
+      const key = 'timer|' + t.tid;
+      if(shownKey !== key){
+        shownKey = key;
+        setMain(`<div class="timer"><div class="tring" id="tring">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+            <circle id="tarc" cx="50" cy="50" r="45" fill="none" stroke="url(#tg)" stroke-width="6" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="0"/>
+            <defs><linearGradient id="tg"><stop offset="0" stop-color="#ff3d7a"/><stop offset="1" stop-color="#ffcf5c"/></linearGradient></defs></svg>
+            <div class="num" id="tnum"></div></div>
+          <div style="min-width:0;">
+            <div class="muted" style="font-size:clamp(1rem,2vw,2rem); letter-spacing:0.2em; text-transform:uppercase;">${t.kind === 'challenge' ? '60-Sekunden-Challenge' : t.kind === 'pantomime' ? '🎭 Pantomime' : t.kind === 'drawing' ? '✏️ Montagsmaler' : '⏲️ Timer'}</div>
+            <h1 class="big-title gradient-text">${esc(t.title)}</h1>
+            ${t.desc ? `<div class="sub" style="color:var(--text)">${esc(t.desc)}</div>` : ''}
+            ${t.performer ? `<div class="performer">Dran ist: <b>${esc(t.performer.name)}</b></div>` : ''}
+          </div></div>`);
+        timerDoneShown = false;
+      }
+      timerEnd = t.running ? receivedAt + t.left : null;
+      timerLeft = t.left;
+      timerDur = t.duration * 1000;
+      tickTimer();
+    },
+
+    slide(){
+      const s = S.slide;
+      if(!s){ VIEWS.lobby(); return; }
+      const key = 'slide|' + JSON.stringify(s);
+      if(shownKey === key) return;
+      shownKey = key;
+      setMain(`<div class="center" style="display:flex; flex-direction:column;">
+        ${s.emoji ? `<div class="slide-emoji">${esc(s.emoji)}</div>` : ''}
+        <h1 class="big-title gradient-text">${esc(s.title)}</h1>
+        ${s.text ? `<div class="slide-text">${esc(s.text)}</div>` : ''}</div>`);
+    },
+
+    scores(){
+      const key = 'scores|' + JSON.stringify(S.players.slice(0, 10));
+      if(shownKey === key) return;
+      const first = !shownKey || !shownKey.startsWith('scores|');
+      shownKey = key;
+      const top = S.players.slice(0, 10);
+      setMain(`<h1 class="big-title gradient-text">🏆 Rangliste</h1>
+        <div class="scores">${top.length ? top.map((p, i) => `<div class="srow r${i + 1}" style="animation-delay:${(top.length - i) * 0.12}s"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1) + '.'}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score}</span></div>`).join('') : '<div class="sub">Noch keine Punkte.</div>'}</div>`);
+      if(first && top.length){ setTimeout(() => { confetti(); fanfare(); }, top.length * 120 + 400); }
+    }
+  };
+
+  // ---------- Grüße-Diashow ----------
+  let wallIdx = -1, wallSig = '', wallT = null;
+  function showWallItem(force){
+    const items = (S.wall || []).slice().reverse(); // neueste zuerst
+    const sig = items.map(w => w.id).join(',');
+    const card = $('wallCard');
+    if(!card) return;
+    if(!items.length){
+      card.innerHTML = `<div><h1 class="big-title gradient-text">Glückwünsche für ${esc(party().name)}</h1><div class="sub">Noch keine Grüße – schick den ersten! 💌</div></div>`;
+      $('wallDots').innerHTML = '';
+      wallSig = sig;
+      return;
+    }
+    let jump = false;
+    if(sig !== wallSig){
+      const prevIds = wallSig ? wallSig.split(',') : [];
+      jump = !prevIds.includes(items[0].id); // neuer Gruß -> sofort zeigen
+      wallSig = sig;
+      if(jump) wallIdx = 0;
+      if(wallIdx >= items.length) wallIdx = 0;
+    }
+    if(!force && !jump) { renderDots(items.length); return; }
+    if(wallIdx < 0) wallIdx = 0;
+    paintWall(items[wallIdx]);
+    renderDots(items.length);
+    clearTimeout(wallT);
+    wallT = setTimeout(nextWall, 8000);
+  }
+  function nextWall(){
+    if(!S || S.view !== 'wall') return;
+    const items = (S.wall || []).slice().reverse();
+    if(!items.length) return;
+    wallIdx = (wallIdx + 1) % items.length;
+    paintWall(items[wallIdx]);
+    renderDots(items.length);
+    clearTimeout(wallT);
+    wallT = setTimeout(nextWall, 8000);
+  }
+  function renderDots(n){
+    const d = $('wallDots');
+    if(d) d.innerHTML = n > 1 ? Array.from({ length: Math.min(n, 30) }, (_, i) => `<i class="${i === wallIdx ? 'on' : ''}"></i>`).join('') : '';
+  }
+  function paintWall(w){
+    const card = $('wallCard');
+    if(!card) return;
+    card.innerHTML = `${w.hasImg ? '<div class="qimg loading" id="wallImg" style="max-width:44vw;max-height:66vh;">Foto lädt …</div>' : ''}
+      <div class="wall-text"><div class="msg">${w.text ? '„' + esc(w.text) + '“' : '📸'}</div><div class="from">💌 ${esc(w.name)}</div></div>`;
+    card.classList.remove('enter'); void card.offsetWidth; card.classList.add('enter');
+    if(w.hasImg){
+      const el = $('wallImg');
+      conn.image(w.id).then(d => {
+        if(d && el.isConnected){ el.outerHTML = '<img src="' + d + '" alt="">'; }
+      });
+    }
+  }
+
+  // ---------- Glücksrad ----------
+  let wheelRot = 0, lastSpin = null, spinRaf = null;
+  const WCOLS = ['#ff3d7a', '#4de3ff', '#ffcf5c', '#3ee08f', '#a87bff', '#ff8a3d'];
+  function drawWheel(segs, rot){
+    const c = $('wheel');
+    if(!c) return;
+    const g = c.getContext('2d'), W = c.width, R = W / 2, n = segs.length, a = Math.PI * 2 / n;
+    g.clearRect(0, 0, W, W);
+    g.save(); g.translate(R, R); g.rotate(rot);
+    for(let i = 0; i < n; i++){
+      g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R - 8, i * a, (i + 1) * a); g.closePath();
+      g.fillStyle = WCOLS[i % WCOLS.length] + (i % 2 ? 'cc' : 'ff'); g.fill();
+      g.strokeStyle = 'rgba(13,13,18,0.6)'; g.lineWidth = 4; g.stroke();
+      g.save(); g.rotate((i + 0.5) * a);
+      g.fillStyle = '#14070c'; g.font = '600 ' + Math.max(16, Math.min(46, R / (n > 10 ? 13 : 10))) + 'px "Space Grotesk", sans-serif';
+      g.textAlign = 'right'; g.textBaseline = 'middle';
+      let txt = segs[i];
+      const maxW = R * 0.78;
+      while(g.measureText(txt).width > maxW && txt.length > 3) txt = txt.slice(0, -2) + '…';
+      g.fillText(txt, R - 34, 0);
+      g.restore();
+    }
+    g.restore();
+    g.beginPath(); g.arc(R, R, R * 0.09, 0, Math.PI * 2); g.fillStyle = '#0d0d12'; g.fill();
+    g.lineWidth = 6; g.strokeStyle = '#ffcf5c'; g.stroke();
+  }
+  function spinWheel(segs, target){
+    const n = segs.length, a = Math.PI * 2 / n;
+    const jitter = (Math.random() - 0.5) * a * 0.6;
+    let final = -Math.PI / 2 - (target + 0.5) * a + jitter;
+    const start = wheelRot;
+    while(final < start + Math.PI * 2 * 6) final += Math.PI * 2;
+    const dur = 6500, t0 = performance.now();
+    $('wheelResult').innerHTML = `<h1 class="big-title gradient-text">Glücksrad</h1><div class="sub">Das Rad dreht sich …</div>`;
+    let lastTick = Math.floor(start / a);
+    cancelAnimationFrame(spinRaf);
+    (function step(now){
+      const p = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 4);
+      wheelRot = start + (final - start) * e;
+      drawWheel(segs, wheelRot);
+      const tick = Math.floor(wheelRot / a);
+      if(tick !== lastTick){ lastTick = tick; beep(1200, 0.03, 'square'); }
+      if(p < 1) spinRaf = requestAnimationFrame(step);
+      else{ wheelRot = wheelRot % (Math.PI * 2); showWheelResult(segs[target], true); }
+    })(t0);
+  }
+  function showWheelResult(text, party){
+    const el = $('wheelResult');
+    if(!el) return;
+    el.innerHTML = `<div class="muted" style="font-size:clamp(1rem,2vw,2rem); letter-spacing:0.2em; text-transform:uppercase;">🎯 Ergebnis</div><h1 class="big-title gradient-text">${esc(text)}</h1>`;
+    el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
+    if(party){ confetti(); fanfare(); }
+  }
+
+  // ---------- Timer ----------
+  let timerEnd = null, timerLeft = 0, timerDur = 60000, timerDoneShown = false;
+  function tickTimer(){
+    const num = $('tnum');
+    if(!num || !S || S.view !== 'timer') return;
+    const left = timerEnd ? Math.max(0, timerEnd - Date.now()) : timerLeft;
+    num.textContent = left <= 0 ? '0:00' : fmtTime(left);
+    const arc = $('tarc');
+    if(arc) arc.style.strokeDashoffset = String(282.7 * (1 - left / timerDur));
+    const done = left <= 0;
+    $('tring').classList.toggle('done', done);
+    if(done && !timerDoneShown && (timerEnd || S.timer.left === 0)){ timerDoneShown = true; [0, 300, 600].forEach(d => setTimeout(() => beep(660, 0.25, 'sawtooth'), d)); }
+    if(!done) timerDoneShown = false;
+  }
+  setInterval(() => {
+    tickTimer();
+    // Quiz-Countdown
+    if(S && S.view === 'quiz' && S.quiz && S.quiz.phase === 'ask' && S.quiz.limit && S.quiz.left != null){
+      const left = Math.max(0, receivedAt + S.quiz.left - Date.now());
+      const bar = $('qbar'), lbl = $('qleft');
+      if(bar) bar.style.width = (left / (S.quiz.limit * 1000) * 100) + '%';
+      if(lbl) lbl.textContent = '⏱️ ' + Math.ceil(left / 1000) + ' s';
+    }
+  }, 200);
+
+  // ---------- Vollbild, Maus ----------
+  document.addEventListener('click', () => {
+    beep(1, 0.01);
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    else document.exitFullscreen().catch(() => {});
+  });
+  let idleT = null;
+  function wake(){ document.body.classList.remove('idle-cursor'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle-cursor'), 2500); }
+  ['mousemove', 'mousedown', 'touchstart'].forEach(ev => document.addEventListener(ev, wake, { passive: true }));
+  wake();
+  window.addEventListener('resize', () => { if(S && S.view === 'wheel'){ shownKey = null; render(); } });
+
+  // ---------- Start ----------
+  Core.qr($('miniQrCode'), 'mitspielen.html', 200) || ($('miniQr').style.display = 'none');
+  S = { view: 'lobby', players: [], party: { name: 'Peti', title: 'Peti wird 60' }, wall: [] };
+  render();
+  conn = Core.connect({
+    onState(state){
+      // Beim (Neu-)Laden ein altes Drehen nicht noch einmal abspielen
+      if(!gotState && state.wheel && state.wheel.spin) lastSpin = state.wheel.spin.id;
+      gotState = true;
+      S = state; receivedAt = Date.now();
+      render();
+    },
+    onFile(id){
+      // Ein fehlendes Foto ist angekommen -> neu zeichnen
+      if(S && S.view === 'quiz' && S.quiz && S.quiz.img === id){ const el = $('qimg'); if(el) fillImg(el, id); }
+      if(S && S.view === 'wall'){ const el = $('wallImg'); if(el){ Core.fileGet(id).then(d => { if(d && el.isConnected) paintWall((S.wall || []).slice().reverse()[wallIdx]); }); } }
+    },
+    onConnection(s){
+      $('conn').classList.toggle('show', s !== 'connected' && s !== 'connecting' && s !== 'initialized');
+      if(s === 'connected') conn && conn.input('hello', { from: 'beamer' });
+    }
+  });
+})();
+</script>
+</body>
+</html>

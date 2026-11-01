@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d12">
+<title>Mitspielen 🎉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="spiele.css">
+<style>
+  body{ -webkit-tap-highlight-color:transparent; }
+  .wrap{ max-width:480px; margin:0 auto; padding:max(18px, env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom)); min-height:100vh; display:flex; flex-direction:column; }
+  .bar{ display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--muted); margin-bottom:14px; gap:10px; }
+  .bar b{ color:var(--text); }
+  .bar button{ background:none; border:none; color:var(--neon2); text-decoration:underline; font:inherit; cursor:pointer; padding:0; }
+  .pill{ background:rgba(255,207,92,0.12); color:var(--gold); border-radius:999px; padding:4px 10px; font-weight:700; white-space:nowrap; }
+  h1{ font-size:clamp(2.6rem, 12vw, 3.8rem); margin:0 0 6px; text-align:center; }
+  .sub{ text-align:center; color:var(--muted); margin:0 0 22px; }
+  #view{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .big-emoji{ font-size:4rem; text-align:center; line-height:1; margin-bottom:12px; }
+  .msg{ text-align:center; font-size:1.25rem; font-weight:600; line-height:1.35; }
+  .msg small{ display:block; font-size:0.9rem; color:var(--muted); font-weight:400; margin-top:8px; }
+  .q{ font-size:1.25rem; font-weight:700; line-height:1.3; margin-bottom:16px; }
+  .qmeta{ font-size:0.78rem; color:var(--muted); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; }
+  .answers{ display:grid; gap:10px; }
+  .ans{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    padding:16px 14px; border-radius:14px; border:2px solid transparent; background:var(--panel);
+    color:var(--text); font:600 1.05rem 'Space Grotesk', sans-serif; cursor:pointer; min-height:64px;
+  }
+  .ans:active{ transform:scale(0.98); }
+  .ans .l{ flex:none; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font:1.4rem 'Bebas Neue', sans-serif; color:#14070c; }
+  .ans:nth-child(1) .l{ background:var(--a); } .ans:nth-child(2) .l{ background:var(--b); }
+  .ans:nth-child(3) .l{ background:var(--c); } .ans:nth-child(4) .l{ background:var(--d); }
+  .ans.chosen{ border-color:var(--neon2); background:rgba(77,227,255,0.1); }
+  .ans.right{ border-color:var(--green); background:rgba(62,224,143,0.12); }
+  .answers.locked .ans:not(.chosen){ opacity:0.4; }
+  .buzz{
+    width:min(72vw, 300px); aspect-ratio:1; border-radius:50%; margin:10px auto; display:block;
+    border:none; cursor:pointer; color:#fff; font:2.6rem 'Bebas Neue', sans-serif; letter-spacing:0.05em;
+    background:radial-gradient(circle at 35% 30%, #ff7aa3, var(--neon) 60%, #a3123e);
+    box-shadow:0 14px 0 #7d0f30, 0 24px 50px rgba(255,61,122,0.35);
+    transition:transform .08s, box-shadow .08s;
+  }
+  .buzz:active{ transform:translateY(10px); box-shadow:0 4px 0 #7d0f30, 0 10px 30px rgba(255,61,122,0.3); }
+  .buzz:disabled{ filter:grayscale(1) brightness(0.6); }
+  .secret{ background:linear-gradient(135deg, rgba(255,61,122,0.18), rgba(255,207,92,0.14)); border:1px solid rgba(255,207,92,0.4); border-radius:18px; padding:22px 18px; text-align:center; }
+  .secret .term{ font:clamp(2.2rem, 11vw, 3.4rem) 'Bebas Neue', sans-serif; line-height:1; margin:10px 0; }
+  .countdown{ font:3.4rem 'Bebas Neue', sans-serif; text-align:center; margin-top:14px; }
+  .result{ text-align:center; border-radius:18px; padding:22px 16px; background:var(--panel); }
+  .result.good{ background:rgba(62,224,143,0.12); border:1px solid rgba(62,224,143,0.4); }
+  .result .pts{ font:3rem 'Bebas Neue', sans-serif; color:var(--green); }
+  .vbar{ position:relative; background:var(--panel); border-radius:10px; overflow:hidden; padding:10px 12px; margin-top:8px; font-weight:600; display:flex; }
+  .vbar i{ position:absolute; inset:0 auto 0 0; background:rgba(255,61,122,0.35); }
+  .vbar span{ position:relative; } .vbar .n{ margin-left:auto; color:var(--gold); }
+  .vbar.win i{ background:rgba(62,224,143,0.4); }
+  .greet-btn{
+    position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%);
+    width:min(448px, calc(100% - 32px)); z-index:10;
+  }
+  .overlay{ position:fixed; inset:0; z-index:20; background:rgba(13,13,18,0.86); backdrop-filter:blur(8px); display:flex; align-items:flex-end; justify-content:center; padding:16px; }
+  .sheet{ width:100%; max-width:480px; background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:20px 18px; max-height:100%; overflow:auto; }
+  .sheet h2{ font:2rem 'Bebas Neue', sans-serif; margin:0 0 6px; }
+  .preview{ margin-top:10px; border-radius:12px; overflow:hidden; max-height:240px; display:flex; justify-content:center; background:rgba(255,255,255,0.03); }
+  .preview img{ max-width:100%; max-height:240px; object-fit:contain; }
+  .file-btn{ position:relative; overflow:hidden; }
+  .file-btn input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .status{ text-align:center; font-size:0.88rem; min-height:1.2em; margin-top:10px; }
+  .status.err{ color:var(--neon); } .status.ok{ color:var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="joinScreen" class="hidden" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h1 class="display gradient-text" id="joinTitle">Mitspielen</h1>
+    <p class="sub">Trag deinen Namen ein, dann bist du dabei.</p>
+    <div class="card">
+      <label class="lbl" for="nameInput" style="margin-top:0;">Dein Name</label>
+      <input type="text" id="nameInput" maxlength="30" autocomplete="off" placeholder="z. B. Mia">
+      <button class="btn primary block" id="joinBtn" style="margin-top:16px; padding:15px;">Los geht's 🎉</button>
+      <div class="status err" id="joinErr"></div>
+    </div>
+  </div>
+
+  <div id="gameScreen" class="hidden" style="flex:1; display:flex; flex-direction:column;">
+    <div class="bar">
+      <span>👋 <b id="meName"></b> · <button id="renameBtn">ändern</button></span>
+      <span class="pill" id="meScore">0 Punkte</span>
+    </div>
+    <div id="view"></div>
+  </div>
+
+</div>
+
+<button class="btn primary greet-btn hidden" id="greetOpen">💌 Gruß an die Wand schicken</button>
+
+<div class="overlay hidden" id="greetOverlay">
+  <div class="sheet">
+    <h2 class="gradient-text">Gruß an <span id="greetTo">Peti</span></h2>
+    <p class="muted" style="margin:0 0 10px; font-size:0.9rem;">Erscheint nach kurzer Freigabe auf dem Beamer.</p>
+    <textarea id="greetText" maxlength="200" placeholder="Alles Liebe zum 60.! …" style="min-height:100px;"></textarea>
+    <div class="row" style="margin-top:10px;">
+      <label class="btn file-btn grow">📷 Foto hinzufügen<input type="file" id="greetPhoto" accept="image/*"></label>
+      <button class="btn" id="greetPhotoClear" style="display:none;">✕</button>
+    </div>
+    <div class="preview hidden" id="greetPreview"></div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn grow" id="greetCancel">Abbrechen</button>
+      <button class="btn primary grow" id="greetSend">Senden 💌</button>
+    </div>
+    <div class="status" id="greetStatus"></div>
+  </div>
+</div>
+
+<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+<script src="spiele-core.js"></script>
+<script>
+(function(){
+  const Core = window.SpieleCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = Core.esc;
+  let me = Core.player();
+  let S = null, receivedAt = 0, conn = null, shownKey = null;
+  const myAnswers = Core.store.get('spiele_my_answers', {}); // qid -> value
+  const myVotes = {};
+  let joinedAt = 0;
+
+  function vibrate(ms){
+    try{
+      const ua = navigator.userActivation;
+      if(navigator.vibrate && (!ua || ua.hasBeenActive)) navigator.vibrate(ms);
+    }catch(e){}
+  }
+  function fmtTime(ms){ const s = Math.ceil(Math.max(0, ms) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function fmt(n){ return Core.fmtNum(n); }
+  function partyName(){ return (S && S.party && S.party.name) || 'Peti'; }
+  function myEntry(){ return S && S.players.find(p => p.id === me.pid); }
+
+  // ---------- Anmelden ----------
+  function showJoin(){
+    $('joinScreen').classList.remove('hidden');
+    $('gameScreen').classList.add('hidden');
+    $('greetOpen').classList.add('hidden');
+    $('nameInput').value = me.name || '';
+    $('nameInput').focus();
+  }
+  function showGame(){
+    $('joinScreen').classList.add('hidden');
+    $('gameScreen').classList.remove('hidden');
+    $('greetOpen').classList.remove('hidden');
+    $('meName').textContent = me.name;
+    render();
+  }
+  function join(){
+    const n = $('nameInput').value.trim().slice(0, 30);
+    if(!n){ $('joinErr').textContent = 'Bitte gib deinen Namen ein.'; return; }
+    me.name = n;
+    Core.savePlayer(me);
+    sendJoin();
+    showGame();
+    if(location.hash === '#gruss') openGreet();
+  }
+  function sendJoin(){
+    if(!conn || !me.name) return;
+    joinedAt = Date.now();
+    conn.input('join', { pid: me.pid, name: me.name });
+  }
+  $('joinBtn').addEventListener('click', join);
+  $('nameInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') join(); });
+  $('renameBtn').addEventListener('click', showJoin);
+
+  // ---------- Darstellung ----------
+  function setView(html){ $('view').innerHTML = html; }
+  function waitMsg(emoji, text, small){
+    return `<div class="big-emoji">${emoji}</div><div class="msg">${text}${small ? '<small>' + small + '</small>' : ''}</div>`;
+  }
+
+  function render(){
+    if($('gameScreen').classList.contains('hidden')) return;
+    const mine = myEntry();
+    $('meScore').textContent = (mine ? mine.score : 0) + ' Punkte';
+    $('greetTo').textContent = partyName();
+    if(!S){ setView(waitMsg('📡', 'Verbinde …')); return; }
+    // Von der Regie entfernt oder Spiel zurückgesetzt? Neu anmelden.
+    if(!mine && me.name && Date.now() - joinedAt > 4000) sendJoin();
+    const fn = VIEWS[S.view] || VIEWS.lobby;
+    fn();
+  }
+
+  const VIEWS = {
+    lobby(){
+      const key = 'lobby';
+      if(shownKey === key) return;
+      shownKey = key;
+      setView(waitMsg('🎉', 'Du bist dabei!', 'Gleich geht\'s los. Schau auf den Beamer.'));
+    },
+
+    quiz(){
+      const z = S.quiz;
+      if(!z){ VIEWS.lobby(); return; }
+      const excluded = z.excludeName && Core.nameKey(z.excludeName) === Core.nameKey(me.name);
+      const answered = myAnswers[z.qid] != null || (z.answeredIds || []).includes(me.pid);
+      const key = 'quiz|' + z.qid + '|' + z.phase + '|' + answered;
+      if(shownKey !== key){
+        shownKey = key;
+        const meta = `<div class="qmeta"><span>${esc(z.title)}</span><span id="qleft"></span></div>`;
+        if(z.phase === 'ask'){
+          if(excluded){
+            setView(meta + waitMsg('🤫', 'Psst, das ist dein Wunsch!', 'Bei dieser Frage setzt du aus.'));
+          }else if(z.type === 'mc'){
+            const chosen = myAnswers[z.qid];
+            setView(meta + `<div class="q">${esc(z.text)}</div>${z.img ? '<div class="muted" style="margin:-8px 0 12px;">📺 Schau dir das Foto auf dem Beamer an.</div>' : ''}
+              <div class="answers${answered ? ' locked' : ''}">${z.options.map((o, i) => `<button class="ans${chosen === i ? ' chosen' : ''}" data-i="${i}"><span class="l">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>
+              ${answered ? '<div class="status ok">Antwort gespeichert ✓</div>' : ''}`);
+            if(!answered){
+              $('view').querySelectorAll('.ans').forEach(b => b.addEventListener('click', () => answer(z.qid, parseInt(b.dataset.i, 10))));
+            }
+          }else{
+            setView(meta + `<div class="q">${esc(z.text)}</div>${z.img ? '<div class="muted" style="margin:-8px 0 12px;">📺 Schau dir das Foto auf dem Beamer an.</div>' : ''}
+              ${answered
+                ? `<div class="result"><div class="muted">Dein Tipp</div><div class="pts" style="color:var(--neon2)">${fmt(myAnswers[z.qid])}</div><div class="muted">gespeichert ✓</div></div>`
+                : `<input type="text" inputmode="decimal" id="estInput" placeholder="Deine Zahl" style="font-size:1.6rem; text-align:center;" autocomplete="off">
+                   <button class="btn primary block" id="estSend" style="margin-top:12px; padding:15px;">Tipp abgeben</button>
+                   <div class="status err" id="estErr"></div>`}`);
+            if(!answered){
+              const send = () => {
+                const v = parseFloat($('estInput').value.replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+                if(!isFinite(v)){ $('estErr').textContent = 'Bitte eine Zahl eingeben.'; return; }
+                answer(z.qid, v);
+              };
+              $('estSend').addEventListener('click', send);
+              $('estInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') send(); });
+            }
+          }
+        }else{
+          const pts = (z.points || {})[me.pid] || 0;
+          const mineV = z.mine ? z.mine[me.pid] : undefined;
+          let h = meta + `<div class="q">${esc(z.text)}</div>`;
+          if(excluded){
+            h += waitMsg('🎶', 'Dein Wunsch wurde erraten?', 'Schau auf den Beamer!');
+          }else if(z.type === 'mc'){
+            h += `<div class="result${pts ? ' good' : ''}">${pts
+              ? `<div class="big-emoji">🎉</div><div class="msg">Richtig!</div><div class="pts">+${pts}</div>`
+              : `<div class="big-emoji">${mineV == null ? '⏰' : '😅'}</div><div class="msg">${mineV == null ? 'Keine Antwort abgegeben' : 'Leider daneben'}</div>
+                 <div class="muted" style="margin-top:8px;">Richtig war: <b style="color:var(--text)">${esc(z.options[z.correct])}</b></div>`}</div>`;
+          }else{
+            h += `<div class="result${pts ? ' good' : ''}"><div class="muted">Lösung</div><div class="pts" style="color:var(--gold)">${z.answer == null ? '?' : fmt(z.answer)}</div>
+              <div class="muted">${mineV == null ? 'Du hast nicht getippt.' : 'Dein Tipp: <b style="color:var(--text)">' + fmt(mineV) + '</b>'}</div>
+              ${pts ? `<div class="pts">+${pts}</div>` : ''}</div>`;
+          }
+          setView(h);
+          if(pts) vibrate([60, 60, 120]);
+        }
+      }
+      updateQuizTimer();
+    },
+
+    buzzer(){
+      const b = S.buzzer;
+      if(!b){ VIEWS.lobby(); return; }
+      const pos = b.queue.findIndex(q => q.pid === me.pid);
+      const locked = (b.locked || []).includes(me.pid);
+      const key = 'buzz|' + b.rid + '|' + b.open + '|' + pos + '|' + locked + '|' + (b.winner ? b.winner.pid : '') + '|' + (b.reveal ? b.reveal.title : '');
+      if(shownKey === key) return;
+      shownKey = key;
+      let h = '<div class="qmeta"><span>🔔 Song-Buzzer</span><span></span></div>';
+      if(b.reveal){
+        h += `<div class="result">${b.reveal.cover ? `<img src="${esc(b.reveal.cover)}" alt="" style="width:60%; border-radius:12px; margin-bottom:12px;">` : ''}
+          <div class="muted">Die Lösung</div><div class="msg" style="margin-top:6px;">${esc(b.reveal.title)}</div><div class="muted">${esc(b.reveal.artists || '')}</div></div>`;
+      }else if(b.winner){
+        h += b.winner.pid === me.pid
+          ? `<div class="result good"><div class="big-emoji">🏆</div><div class="msg">Richtig!</div><div class="pts">+${b.winner.points}</div></div>`
+          : waitMsg('🎉', esc(b.winner.name) + ' lag richtig!');
+        if(b.winner.pid === me.pid) vibrate([60, 60, 120]);
+      }else if(pos === 0){
+        h += waitMsg('🎤', 'Du bist dran!', 'Sag laut, welcher Song das ist.');
+        vibrate(300);
+      }else if(pos > 0){
+        h += waitMsg('⏳', 'Du bist Nummer ' + (pos + 1), 'Falls die anderen danebenliegen, kommst du dran.');
+      }else if(locked){
+        h += waitMsg('🙈', 'Leider falsch', 'Diese Runde bist du raus.');
+      }else if(b.open){
+        h += `<button class="buzz" id="buzzBtn">Buzz!</button><div class="msg"><small>Erkannt? Dann schnell drücken!</small></div>`;
+      }else{
+        h += waitMsg('🎵', 'Gleich kommt der nächste Song', 'Halte dich bereit!');
+      }
+      setView(h);
+      const bb = $('buzzBtn');
+      if(bb) bb.addEventListener('click', () => {
+        bb.disabled = true; vibrate(80);
+        conn.input('buzz', { pid: me.pid, rid: b.rid });
+      });
+    },
+
+    vote(){
+      const v = S.vote;
+      if(!v){ VIEWS.lobby(); return; }
+      const chosen = myVotes[v.vid];
+      const key = 'vote|' + v.vid + '|' + v.reveal + '|' + chosen;
+      if(shownKey !== key){
+        shownKey = key;
+        if(!v.reveal){
+          setView(`<div class="qmeta"><span>🗳️ Abstimmung</span><span></span></div><div class="q">${esc(v.question)}</div>
+            <div class="answers">${v.options.map((o, i) => `<button class="ans${chosen === i ? ' chosen' : ''}" data-i="${i}"><span>${esc(o)}</span></button>`).join('')}</div>
+            <div class="status ok">${chosen != null ? 'Stimme gezählt ✓ – du kannst noch umentscheiden.' : ''}</div>`);
+          $('view').querySelectorAll('.ans').forEach(b => b.addEventListener('click', () => {
+            const i = parseInt(b.dataset.i, 10);
+            myVotes[v.vid] = i; vibrate(40);
+            conn.input('vote', { pid: me.pid, vid: v.vid, option: i });
+            shownKey = null; render();
+          }));
+        }else{
+          const max = Math.max(0, ...v.counts);
+          setView(`<div class="qmeta"><span>🗳️ Ergebnis</span><span>${v.total} Stimmen</span></div><div class="q">${esc(v.question)}</div>`
+            + v.options.map((o, i) => `<div class="vbar${v.counts[i] === max && max > 0 ? ' win' : ''}"><i style="width:${v.total ? v.counts[i] / v.total * 100 : 0}%"></i><span>${esc(o)}${chosen === i ? ' ✓' : ''}</span><span class="n">${v.counts[i]}</span></div>`).join(''));
+        }
+      }
+    },
+
+    wall(){
+      const key = 'wall';
+      if(shownKey === key) return;
+      shownKey = key;
+      setView(waitMsg('💌', 'Schick einen Gruß an ' + esc(partyName()) + '!', 'Mit Foto, wenn du magst. Er erscheint auf dem Beamer.')
+        + '<button class="btn primary block" id="wallGreet" style="margin-top:20px; padding:15px;">💌 Gruß schreiben</button>');
+      $('wallGreet').addEventListener('click', openGreet);
+    },
+
+    wheel(){
+      const w = S.wheel;
+      const key = 'wheel|' + (w && w.spin ? w.spin.id : '');
+      if(shownKey === key) return;
+      shownKey = key;
+      setView(waitMsg('🎡', 'Das Glücksrad', 'Schau auf den Beamer, wen es trifft!'));
+    },
+
+    timer(){
+      const t = S.timer;
+      if(!t){ VIEWS.lobby(); return; }
+      const isMe = t.performer && t.performer.pid === me.pid;
+      const key = 'timer|' + t.tid + '|' + isMe;
+      if(shownKey !== key){
+        shownKey = key;
+        if(isMe && t.secret){
+          setView(`<div class="secret"><div class="muted">🤫 Nur du siehst das!</div><div class="term gradient-text">${esc(t.secret)}</div>
+            <div>${t.kind === 'pantomime' ? 'Stell es dar – ohne Worte!' : 'Zeichne es – ohne Worte und Buchstaben!'}</div></div>
+            <div class="countdown" id="tnum"></div>`);
+          vibrate([100, 50, 100]);
+        }else{
+          setView(`<div class="qmeta"><span>${t.kind === 'challenge' ? '⏱️ Challenge' : t.kind === 'pantomime' ? '🎭 Pantomime' : t.kind === 'drawing' ? '✏️ Montagsmaler' : '⏲️ Timer'}</span><span></span></div>
+            <div class="msg">${esc(t.title)}${t.desc ? '<small>' + esc(t.desc) + '</small>' : ''}</div>
+            ${t.performer ? `<div class="msg" style="margin-top:14px;"><small>Dran ist <b style="color:var(--gold)">${esc(t.performer.name)}</b>${t.secret ? ' – rate mit!' : ''}</small></div>` : ''}
+            <div class="countdown" id="tnum"></div>`);
+        }
+      }
+      updateTimer();
+    },
+
+    slide(){
+      const s = S.slide;
+      if(!s){ VIEWS.lobby(); return; }
+      const key = 'slide|' + JSON.stringify(s);
+      if(shownKey === key) return;
+      shownKey = key;
+      setView(waitMsg(esc(s.emoji || '📣'), esc(s.title), s.text ? esc(s.text) : ''));
+    },
+
+    scores(){
+      const idx = S.players.findIndex(p => p.id === me.pid);
+      const key = 'scores|' + JSON.stringify(S.players.slice(0, 3)) + '|' + idx + '|' + (idx >= 0 ? S.players[idx].score : '');
+      if(shownKey === key) return;
+      shownKey = key;
+      const p = S.players[idx];
+      setView(`<div class="result${idx === 0 ? ' good' : ''}"><div class="big-emoji">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🏆'}</div>
+        <div class="msg">${idx >= 0 ? 'Platz ' + (idx + 1) + ' von ' + S.players.length : 'Rangliste'}</div>
+        ${p ? `<div class="pts" style="color:var(--gold)">${p.score} Punkte</div>` : ''}</div>
+        <div style="margin-top:16px;">${S.players.slice(0, 3).map((x, i) => `<div class="vbar"><span>${['🥇', '🥈', '🥉'][i]} ${esc(x.name)}</span><span class="n">${x.score}</span></div>`).join('')}</div>`);
+    }
+  };
+
+  function answer(qid, value){
+    myAnswers[qid] = value;
+    const keys = Object.keys(myAnswers);
+    if(keys.length > 60) delete myAnswers[keys[0]];
+    Core.store.set('spiele_my_answers', myAnswers);
+    vibrate(40);
+    conn.input('answer', { pid: me.pid, qid, value });
+    shownKey = null;
+    render();
+  }
+
+  function updateQuizTimer(){
+    const el = $('qleft');
+    if(!el || !S.quiz || S.quiz.phase !== 'ask' || S.quiz.left == null){ if(el) el.textContent = ''; return; }
+    el.textContent = '⏱️ ' + Math.ceil(Math.max(0, receivedAt + S.quiz.left - Date.now()) / 1000) + ' s';
+  }
+  function updateTimer(){
+    const el = $('tnum');
+    if(!el || !S.timer) return;
+    const t = S.timer;
+    const left = t.running ? Math.max(0, receivedAt + t.left - Date.now()) : t.left;
+    el.textContent = left <= 0 ? '⏰ Zeit!' : fmtTime(left);
+  }
+  setInterval(() => {
+    if(!S) return;
+    if(S.view === 'quiz') updateQuizTimer();
+    if(S.view === 'timer') updateTimer();
+  }, 250);
+
+  // ---------- Gruß ----------
+  let greetImg = null;
+  function openGreet(){
+    $('greetOverlay').classList.remove('hidden');
+    $('greetStatus').textContent = ''; $('greetStatus').className = 'status';
+    setTimeout(() => $('greetText').focus(), 50);
+  }
+  function closeGreet(){ $('greetOverlay').classList.add('hidden'); }
+  $('greetOpen').addEventListener('click', openGreet);
+  $('greetCancel').addEventListener('click', closeGreet);
+  $('greetPhoto').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    $('greetStatus').textContent = 'Foto wird vorbereitet …'; $('greetStatus').className = 'status';
+    try{
+      greetImg = await Core.compressImage(f, 1000, 0.72);
+      $('greetPreview').innerHTML = '<img src="' + greetImg + '" alt="">';
+      $('greetPreview').classList.remove('hidden');
+      $('greetPhotoClear').style.display = '';
+      $('greetStatus').textContent = '';
+    }catch(err){
+      greetImg = null;
+      $('greetStatus').textContent = 'Das Foto konnte nicht gelesen werden.'; $('greetStatus').className = 'status err';
+    }
+    e.target.value = '';
+  });
+  $('greetPhotoClear').addEventListener('click', () => {
+    greetImg = null;
+    $('greetPreview').classList.add('hidden'); $('greetPreview').innerHTML = '';
+    $('greetPhotoClear').style.display = 'none';
+  });
+  $('greetSend').addEventListener('click', async () => {
+    const text = $('greetText').value.trim();
+    if(!text && !greetImg){ $('greetStatus').textContent = 'Schreib etwas oder füge ein Foto hinzu.'; $('greetStatus').className = 'status err'; return; }
+    if(!conn){ return; }
+    $('greetSend').disabled = true;
+    const id = Core.uid('g_');
+    try{
+      if(greetImg){
+        $('greetStatus').textContent = 'Foto wird gesendet …'; $('greetStatus').className = 'status';
+        await conn.sendFile(id, greetImg, (i, n) => { $('greetStatus').textContent = 'Foto wird gesendet … ' + Math.round(i / n * 100) + ' %'; });
+      }
+      conn.input('greet', { id, pid: me.pid, name: me.name, text, hasImg: !!greetImg });
+      $('greetText').value = '';
+      $('greetPhotoClear').click();
+      $('greetStatus').textContent = 'Danke! Dein Gruß ist unterwegs 💌'; $('greetStatus').className = 'status ok';
+      vibrate(60);
+      setTimeout(closeGreet, 1400);
+    }catch(err){
+      $('greetStatus').textContent = 'Senden hat nicht geklappt, bitte nochmal versuchen.'; $('greetStatus').className = 'status err';
+    }
+    $('greetSend').disabled = false;
+  });
+
+  // ---------- Start ----------
+  conn = Core.connect({
+    receiveFiles: false,
+    onState(state){
+      S = state; receivedAt = Date.now();
+      render();
+    },
+    onConnection(s){
+      if(s === 'connected' && me.name) sendJoin();
+    }
+  });
+  if(me.name){
+    showGame();
+    if(location.hash === '#gruss') openGreet();
+  }else{
+    showJoin();
+  }
+})();
+</script>
+</body>
+</html>
